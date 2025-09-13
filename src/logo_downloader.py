@@ -161,7 +161,7 @@ class LogoDownloader:
         
         try:
             logger.info(f"Fetching team data for {league} from ESPN API...")
-            response = self.session.get(api_url, headers=self.headers, timeout=self.request_timeout)
+            response = self.session.get(api_url, params={'limit':1000},headers=self.headers, timeout=self.request_timeout)
             response.raise_for_status()
             data = response.json()
             
