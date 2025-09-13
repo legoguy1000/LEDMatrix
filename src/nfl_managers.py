@@ -154,7 +154,7 @@ class BaseNFLManager: # Renamed class
         
         self.logger.info(f"[NFL] Fetching full {current_year} season schedule from ESPN API (cache_enabled={use_cache})...")
         try:
-            url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={current_year}"
+            url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={current_year}&limit=1000"
             response = self.session.get(url, headers=self.headers, timeout=15)
             response.raise_for_status()
             data = response.json()

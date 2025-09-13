@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 import pickle
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from rgbmatrix import graphics
 import pytz
 from src.config_manager import ConfigManager
 import time

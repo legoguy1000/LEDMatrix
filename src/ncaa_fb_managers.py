@@ -227,7 +227,7 @@ class BaseNCAAFBManager: # Renamed class
             
             self.logger.info(f"[NCAAFB] Fetching full {year} season schedule from ESPN API...")
             try:
-                url = f"https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates={year}&seasontype=2"
+                url = f"https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates={year}&seasontype=2&limit=1000"
                 response = self.session.get(url, headers=self.headers, timeout=15)
                 response.raise_for_status()
                 data = response.json()

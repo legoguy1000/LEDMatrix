@@ -1,4 +1,8 @@
-from rgbmatrix import RGBMatrix, RGBMatrixOptions
+import os
+if os.getenv("EMULATOR", "false") == "true":
+    from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
+else:
+    from rgbmatrix import RGBMatrix, RGBMatrixOptions
 from PIL import Image, ImageDraw, ImageFont
 import time
 from typing import Dict, Any, List, Tuple

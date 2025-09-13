@@ -4,8 +4,6 @@ import time
 import logging
 from PIL import Image, ImageDraw, ImageFont
 import requests
-from rgbmatrix import RGBMatrix, RGBMatrixOptions
-import os
 from typing import Dict, Any
 
 # Import the API counter function from web interface

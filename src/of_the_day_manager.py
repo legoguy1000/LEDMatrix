@@ -1,11 +1,8 @@
 import os
 import json
 import logging
-from datetime import datetime, date
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
-from rgbmatrix import graphics
-import pytz
+from datetime import date
+from PIL import ImageDraw, ImageFont
 from src.config_manager import ConfigManager
 import time
 import freetype
