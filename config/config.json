@@ -181,6 +181,11 @@
             "ncaam_basketball": {
                 "enabled": false,
                 "top_teams": 25
+            },
+            "ncaam_hockey": {
+                "enabled": true,
+                "top_teams": 10,
+                "show_ranking": true
             }
         },
         "update_interval": 3600,
@@ -297,7 +302,7 @@
             "UGA",
             "AUB"
         ],
-        "logo_dir": "assets/sports/ncaa_fbs_logos",
+        "logo_dir": "assets/sports/ncaa_logos",
         "show_records": true,
         "show_ranking": true,
         "display_modes": {
@@ -323,7 +328,7 @@
             "UGA",
             "AUB"
         ],
-        "logo_dir": "assets/sports/ncaa_fbs_logos",
+        "logo_dir": "assets/sports/ncaa_logos",
         "show_records": true,
         "display_modes": {
             "ncaa_baseball_live": true,
@@ -346,7 +351,7 @@
             "UGA",
             "AUB"
         ],
-        "logo_dir": "assets/sports/ncaa_fbs_logos",
+        "logo_dir": "assets/sports/ncaa_logos",
         "show_records": true,
         "display_modes": {
             "ncaam_basketball_live": true,

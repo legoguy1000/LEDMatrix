@@ -1,22 +1,17 @@
 import time
 import logging
 import requests
-import json
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta, timezone
 import os
 from PIL import Image, ImageDraw, ImageFont
-import pytz
 try:
     from .display_manager import DisplayManager
     from .cache_manager import CacheManager
-    from .config_manager import ConfigManager
     from .logo_downloader import download_missing_logo
 except ImportError:
     # Fallback for direct imports
     from display_manager import DisplayManager
     from cache_manager import CacheManager
-    from config_manager import ConfigManager
     from logo_downloader import download_missing_logo
 
 # Import the API counter function from web interface
@@ -109,8 +104,8 @@ class LeaderboardManager:
             'ncaa_fb': {
                 'sport': 'football',
                 'league': 'college-football',
-                'logo_dir': 'assets/sports/ncaa_fbs_logos',
-                'league_logo': 'assets/sports/ncaa_fbs_logos/ncaa_fb.png',
+                'logo_dir': 'assets/sports/ncaa_logos',
+                'league_logo': 'assets/sports/ncaa_logos/ncaa_fb.png',
                 'teams_url': 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams',
                 'enabled': self.enabled_sports.get('ncaa_fb', {}).get('enabled', False),
                 'top_teams': self.enabled_sports.get('ncaa_fb', {}).get('top_teams', 25),
@@ -131,8 +126,8 @@ class LeaderboardManager:
             'ncaam_basketball': {
                 'sport': 'basketball',
                 'league': 'mens-college-basketball',
-                'logo_dir': 'assets/sports/ncaa_fbs_logos',
-                'league_logo': 'assets/sports/ncaa_fbs_logos/ncaam.png',
+                'logo_dir': 'assets/sports/ncaa_logos',
+                'league_logo': 'assets/sports/ncaa_logos/ncaam.png',
                 'teams_url': 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams',
                 'enabled': self.enabled_sports.get('ncaam_basketball', {}).get('enabled', False),
                 'top_teams': self.enabled_sports.get('ncaam_basketball', {}).get('top_teams', 25)
@@ -140,8 +135,8 @@ class LeaderboardManager:
             'ncaa_baseball': {
                 'sport': 'baseball',
                 'league': 'college-baseball',
-                'logo_dir': 'assets/sports/ncaa_fbs_logos',
-                'league_logo': 'assets/sports/ncaa_fbs_logos/ncaa_baseball.png',
+                'logo_dir': 'assets/sports/ncaa_logos',
+                'league_logo': 'assets/sports/ncaa_logos/ncaa_baseball.png',
                 'standings_url': 'https://site.api.espn.com/apis/v2/sports/baseball/college-baseball/standings',
                 'scoreboard_url': 'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/scoreboard',
                 'enabled': self.enabled_sports.get('ncaa_baseball', {}).get('enabled', False),
@@ -149,7 +144,16 @@ class LeaderboardManager:
                 'season': self.enabled_sports.get('ncaa_baseball', {}).get('season', 2025),
                 'level': self.enabled_sports.get('ncaa_baseball', {}).get('level', 1),
                 'sort': self.enabled_sports.get('ncaa_baseball', {}).get('sort', 'winpercent:desc,gamesbehind:asc')
-            }
+            },
+            'ncaam_hockey': {
+                'sport': 'hockey',
+                'league': 'mens-college-hockey',
+                'logo_dir': 'assets/sports/ncaa_logos',
+                'league_logo': 'assets/sports/ncaa_logos/ncaah.png',
+                'teams_url': 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-hockey/teams',
+                'enabled': self.enabled_sports.get('ncaam_hockey', {}).get('enabled', False),
+                'top_teams': self.enabled_sports.get('ncaam_hockey', {}).get('top_teams', 25)
+            },
         }
         
         logger.info(f"LeaderboardManager initialized with enabled sports: {[k for k, v in self.league_configs.items() if v['enabled']]}")
@@ -289,6 +293,9 @@ class LeaderboardManager:
         # Special handling for college football - use rankings endpoint
         if league_key == 'college-football':
             return self._fetch_ncaa_fb_rankings(league_config)
+        
+        if league_key == 'mens-college-hockey':
+            return self._fetch_ncaam_hockey_rankings(league_config)
         
         # Use standings endpoint for NFL, MLB, NHL, and NCAA Baseball
         if league_key in ['nfl', 'mlb', 'nhl', 'college-baseball']:
@@ -472,6 +479,111 @@ class LeaderboardManager:
             logger.error(f"Error fetching rankings for {league_key}: {e}")
             return []
 
+    def _fetch_ncaam_hockey_rankings(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Fetch NCAA Hockey rankings from ESPN API using the rankings endpoint."""
+        league_key = league_config['league']
+        cache_key = f"leaderboard_{league_key}_rankings"
+        
+        # Try to get cached data first
+        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        if cached_data:
+            logger.info(f"Using cached rankings data for {league_key}")
+            return cached_data.get('standings', [])
+        
+        try:
+            logger.info(f"Fetching fresh rankings data for {league_key}")
+            rankings_url = "https://site.api.espn.com/apis/site/v2/sports/hockey/mens-college-hockey/rankings"
+            
+            # Get rankings data
+            response = requests.get(rankings_url, timeout=self.request_timeout)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Increment API counter for sports data
+            increment_api_counter('sports', 1)
+            
+            logger.info(f"Available rankings: {[rank['name'] for rank in data.get('availableRankings', [])]}")
+            logger.info(f"Latest season: {data.get('latestSeason', {})}")
+            logger.info(f"Latest week: {data.get('latestWeek', {})}")
+            
+            rankings_data = data.get('rankings', [])
+            if not rankings_data:
+                logger.warning("No rankings data found")
+                return []
+            
+            # Use the first ranking (usually AP Top 25)
+            first_ranking = rankings_data[0]
+            ranking_name = first_ranking.get('name', 'Unknown')
+            ranking_type = first_ranking.get('type', 'Unknown')
+            teams = first_ranking.get('ranks', [])
+            
+            logger.info(f"Using ranking: {ranking_name} ({ranking_type})")
+            logger.info(f"Found {len(teams)} teams in ranking")
+            
+            standings = []
+            
+            # Process each team in the ranking
+            for team_data in teams:
+                team_info = team_data.get('team', {})
+                team_name = team_info.get('name', 'Unknown')
+                team_abbr = team_info.get('abbreviation', 'Unknown')
+                current_rank = team_data.get('current', 0)
+                record_summary = team_data.get('recordSummary', '0-0')
+                
+                logger.debug(f"  {current_rank}. {team_name} ({team_abbr}): {record_summary}")
+                
+                # Parse the record string (e.g., "12-1", "8-4", "10-2-1")
+                wins = 0
+                losses = 0
+                ties = 0
+                win_percentage = 0
+                
+                try:
+                    parts = record_summary.split('-')
+                    if len(parts) >= 2:
+                        wins = int(parts[0])
+                        losses = int(parts[1])
+                        if len(parts) == 3:
+                            ties = int(parts[2])
+                        
+                        # Calculate win percentage
+                        total_games = wins + losses + ties
+                        win_percentage = wins / total_games if total_games > 0 else 0
+                except (ValueError, IndexError):
+                    logger.warning(f"Could not parse record for {team_name}: {record_summary}")
+                    continue
+                
+                standings.append({
+                    'name': team_name,
+                    'abbreviation': team_abbr,
+                    'rank': current_rank,
+                    'wins': wins,
+                    'losses': losses,
+                    'ties': ties,
+                    'win_percentage': win_percentage,
+                    'record_summary': record_summary,
+                    'ranking_name': ranking_name
+                })
+            
+            # Limit to top teams (they're already ranked)
+            top_teams = standings[:league_config['top_teams']]
+            
+            # Cache the results
+            cache_data = {
+                'standings': top_teams,
+                'timestamp': time.time(),
+                'league': league_key,
+                'ranking_name': ranking_name
+            }
+            self.cache_manager.save_cache(cache_key, cache_data)
+            
+            logger.info(f"Fetched and cached {len(top_teams)} teams for {league_key} using {ranking_name}")
+            return top_teams
+            
+        except Exception as e:
+            logger.error(f"Error fetching rankings for {league_key}: {e}")
+            return []
+        
     def _fetch_standings_data(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Fetch standings data from ESPN API using the standings endpoint."""
         league_key = league_config['league']
