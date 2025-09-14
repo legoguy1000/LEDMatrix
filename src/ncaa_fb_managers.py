@@ -190,7 +190,7 @@ class BaseNCAAFBManager: # Renamed class
 
             odds_data = self.odds_manager.get_odds(
                 sport="football",
-                league="ncaa_fb",
+                league="college-football",
                 event_id=game['id'],
                 update_interval_seconds=update_interval
             )

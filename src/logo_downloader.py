@@ -31,7 +31,8 @@ class LogoDownloader:
         'ncaa_fb_all': 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams',  # Includes FCS
         'fcs': 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams',  # FCS teams from same endpoint
         'ncaam_basketball': 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams',
-        'ncaa_baseball': 'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams'
+        'ncaa_baseball': 'https://site.api.espn.com/apis/site/v2/sports/baseball/college-baseball/teams',
+        "ncaam_hockey": "https://site.api.espn.com/apis/site/v2/sports/hockey/mens-college-hockey/teams"
     }
     
     # Directory mappings for different leagues
@@ -40,11 +41,12 @@ class LogoDownloader:
         'nba': 'assets/sports/nba_logos', 
         'mlb': 'assets/sports/mlb_logos',
         'nhl': 'assets/sports/nhl_logos',
-        'ncaa_fb': 'assets/sports/ncaa_fbs_logos',
-        'ncaa_fb_all': 'assets/sports/ncaa_fbs_logos',  # FCS teams go in same directory
-        'fcs': 'assets/sports/ncaa_fbs_logos',  # FCS teams go in same directory
-        'ncaam_basketball': 'assets/sports/ncaa_fbs_logos',
-        'ncaa_baseball': 'assets/sports/ncaa_fbs_logos'
+        'ncaa_fb': 'assets/sports/ncaa_logos',
+        'ncaa_fb_all': 'assets/sports/ncaa_logos',  # FCS teams go in same directory
+        'fcs': 'assets/sports/ncaa_logos',  # FCS teams go in same directory
+        'ncaam_basketball': 'assets/sports/ncaa_logos',
+        'ncaa_baseball': 'assets/sports/ncaa_logos',
+        'ncaam_hockey': 'assets/sports/ncaa_logos',
     }
     
     def __init__(self, request_timeout: int = 30, retry_attempts: int = 3):
