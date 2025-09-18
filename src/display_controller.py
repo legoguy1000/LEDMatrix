@@ -499,7 +499,7 @@ class DisplayController:
                 return self.display_durations.get(mode_key, 60)
 
         # Handle dynamic duration for stocks
-        if mode_key == 'stocks' and self.stocks:
+        elif mode_key == 'stocks' and self.stocks:
             try:
                 dynamic_duration = self.stocks.get_dynamic_duration()
                 # Only log if duration has changed or we haven't logged this duration yet
@@ -513,7 +513,7 @@ class DisplayController:
                 return self.display_durations.get(mode_key, 60)
 
         # Handle dynamic duration for stock_news
-        if mode_key == 'stock_news' and self.news:
+        elif mode_key == 'stock_news' and self.news:
             try:
                 dynamic_duration = self.news.get_dynamic_duration()
                 # Only log if duration has changed or we haven't logged this duration yet
@@ -527,7 +527,7 @@ class DisplayController:
                 return self.display_durations.get(mode_key, 60)
 
         # Handle dynamic duration for odds_ticker
-        if mode_key == 'odds_ticker' and self.odds_ticker:
+        elif mode_key == 'odds_ticker' and self.odds_ticker:
             try:
                 dynamic_duration = self.odds_ticker.get_dynamic_duration()
                 # Only log if duration has changed or we haven't logged this duration yet
@@ -541,7 +541,7 @@ class DisplayController:
                 return self.display_durations.get(mode_key, 60)
 
         # Handle dynamic duration for leaderboard
-        if mode_key == 'leaderboard' and self.leaderboard:
+        elif mode_key == 'leaderboard' and self.leaderboard:
             try:
                 dynamic_duration = self.leaderboard.get_dynamic_duration()
                 # Only log if duration has changed or we haven't logged this duration yet
@@ -555,7 +555,7 @@ class DisplayController:
                 return self.display_durations.get(mode_key, 60)
 
         # Simplify weather key handling
-        if mode_key.startswith('weather_'):
+        elif mode_key.startswith('weather_'):
             return self.display_durations.get(mode_key, 15)
             # duration_key = mode_key.split('_', 1)[1]
             # if duration_key == 'current': duration_key = 'weather_current' # Keep specific keys

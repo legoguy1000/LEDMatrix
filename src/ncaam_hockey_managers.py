@@ -743,6 +743,7 @@ class NCAAMHockeyRecentManager(BaseNCAAMHockeyManager):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
         self.recent_games = []
+        self.games_list = []
         self.current_game_index = 0
         self.last_update = 0
         self.update_interval = 300  # 5 minutes
@@ -840,6 +841,7 @@ class NCAAMHockeyUpcomingManager(BaseNCAAMHockeyManager):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
         self.upcoming_games = []
+        self.games_list = [] # Filtered list for display (favorite teams)
         self.current_game_index = 0
         self.last_update = 0
         self.update_interval = 300  # 5 minutes
