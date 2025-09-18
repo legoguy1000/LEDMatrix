@@ -290,20 +290,16 @@ class BaseNFLManager: # Renamed class
             now = datetime.now(pytz.utc)
             immediate_events = []
             
-            for days_offset in range(-1, 7):  # Yesterday through next 6 days
-                check_date = now + timedelta(days=days_offset)
-                date_str = check_date.strftime('%Y%m%d')
-                
-                url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={date_str}"
-                response = self.session.get(url, headers=self.headers, timeout=10)
-                response.raise_for_status()
-                data = response.json()
-                date_events = data.get('events', [])
-                immediate_events.extend(date_events)
-                
-                if days_offset == 0:  # Today
-                    self.logger.debug(f"[NFL] Immediate fetch - Current date ({date_str}): {len(date_events)} events")
+            start_date = now + timedelta(days=-1)
+            end_date = now + timedelta(days=7)
+            date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
             
+            url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={date_str}"
+            response = self.session.get(url, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            immediate_events = data.get('events', [])
+                
             if immediate_events:
                 self.logger.info(f"[NFL] Using {len(immediate_events)} immediate events while background fetch completes")
                 return immediate_events

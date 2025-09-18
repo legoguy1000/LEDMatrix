@@ -228,44 +228,38 @@ class BaseNCAAFBManager: # Renamed class
         This method now uses background threading to prevent blocking the display.
         """
         now = datetime.now(pytz.utc)
-        current_year = now.year
-        years_to_check = [current_year]
+        season_year = now.year
         if now.month < 8:
-            years_to_check.append(current_year - 1)
-
-        all_events = []
-        for year in years_to_check:
-            cache_key = f"ncaafb_schedule_{year}"
-            if use_cache:
-                cached_data = self.cache_manager.get(cache_key, max_age=self.season_cache_duration)
-                if cached_data:
-                    self.logger.info(f"[NCAAFB] Using cached schedule for {year}")
-                    all_events.extend(cached_data)
-                    continue
-            
-            # Check if we're already fetching this year's data in background
-            if hasattr(self, '_background_fetching') and year in self._background_fetching:
-                self.logger.info(f"[NCAAFB] Background fetch already in progress for {year}, using partial data")
-                # Return partial data if available, or trigger background fetch
-                partial_data = self._get_partial_schedule_data(year)
-                if partial_data:
-                    all_events.extend(partial_data)
-                    continue
-            
-            self.logger.info(f"[NCAAFB] Fetching full {year} season schedule from ESPN API...")
-            
-            # Start background fetch for complete data
-            self._start_background_schedule_fetch(year)
-            
-            # For immediate response, fetch current/recent games only
-            year_events = self._fetch_immediate_games(year)
-            all_events.extend(year_events)
+            season_year = now.year - 1
         
-        if not all_events:
+
+        cache_key = f"ncaafb_schedule_{season_year}"
+        if use_cache:
+            cached_data = self.cache_manager.get(cache_key, max_age=self.season_cache_duration)
+            if cached_data:
+                self.logger.info(f"[NCAAFB] Using cached schedule for {season_year}")
+                return {'events': cached_data}
+        
+        # Check if we're already fetching this year's data in background
+        if hasattr(self, '_background_fetching') and season_year in self._background_fetching:
+            self.logger.info(f"[NCAAFB] Background fetch already in progress for {season_year}, using partial data")
+            # Return partial data if available, or trigger background fetch
+            partial_data = self._get_partial_schedule_data(season_year)
+            if partial_data:
+                return {'events': partial_data}
+            
+        self.logger.info(f"[NCAAFB] Fetching full {season_year} season schedule from ESPN API...")
+        
+        # Start background fetch for complete data
+        self._start_background_schedule_fetch(season_year)
+        
+        # For immediate response, fetch current/recent games only
+        
+        if not (year_events := self._fetch_immediate_games(season_year)):
             self.logger.warning("[NCAAFB] No events found in schedule data.")
             return None
-
-        return {'events': all_events}
+        
+        return {'events': year_events}
     
     def _fetch_immediate_games(self, year: int) -> List[Dict]:
         """Fetch immediate games (current week + next few days) for quick display."""
@@ -293,75 +287,41 @@ class BaseNCAAFBManager: # Renamed class
         
         return immediate_events
     
-    def _start_background_schedule_fetch(self, year: int):
+    def _start_background_schedule_fetch(self, season_year: int):
         """Start background thread to fetch complete season schedule."""
         import threading
         
         if not hasattr(self, '_background_fetching'):
             self._background_fetching = set()
         
-        if year in self._background_fetching:
+        datestring = f"{season_year}0801-{season_year+1}0201"
+
+        if season_year in self._background_fetching:
             return  # Already fetching
         
-        self._background_fetching.add(year)
+        self._background_fetching.add(season_year)
         
         def background_fetch():
+            start_time = time.time()
+            self.logger.info(f"[NCAAFB] Starting background fetch for {season_year} season...")
+            year_events = []
+                    
             try:
-                start_time = time.time()
-                self.logger.info(f"[NCAAFB] Starting background fetch for {year} season...")
-                year_events = []
-                
-                # Fetch week by week to ensure we get complete season data
-                for week in range(1, 16):
-                    # Add timeout check to prevent infinite background fetching
-                    if time.time() - start_time > 300:  # 5 minute timeout
-                        self.logger.warning(f"[NCAAFB] Background fetch timeout after 5 minutes for {year}")
-                        break
-                        
-                    try:
-                        url = f"https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?seasontype=2&week={week}"
-                        response = self.session.get(url, headers=self.headers, timeout=15)
-                        response.raise_for_status()
-                        data = response.json()
-                        week_events = data.get('events', [])
-                        year_events.extend(week_events)
-                        
-                        # Log progress for first few weeks
-                        if week <= 3:
-                            self.logger.debug(f"[NCAAFB] Background - Week {week}: fetched {len(week_events)} events")
-                        
-                        # If no events found for this week, we might be past the season
-                        if not week_events and week > 10:
-                            self.logger.debug(f"[NCAAFB] Background - No events found for week {week}, ending season fetch")
-                            break
-                            
-                    except requests.exceptions.RequestException as e:
-                        self.logger.warning(f"[NCAAFB] Background - Error fetching week {week} for {year}: {e}")
-                        continue
-                
-                # Also fetch postseason games (bowl games, playoffs) if we haven't timed out
-                if time.time() - start_time < 300:
-                    try:
-                        url = f"https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?seasontype=3"
-                        response = self.session.get(url, headers=self.headers, timeout=15)
-                        response.raise_for_status()
-                        data = response.json()
-                        postseason_events = data.get('events', [])
-                        year_events.extend(postseason_events)
-                        self.logger.debug(f"[NCAAFB] Background - Postseason: fetched {len(postseason_events)} events")
-                    except requests.exceptions.RequestException as e:
-                        self.logger.warning(f"[NCAAFB] Background - Error fetching postseason for {year}: {e}")
-                
+                url = f"https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard"
+                response = self.session.get(url, params={"dates":datestring, "limit": 1000}, headers=self.headers, timeout=15)
+                response.raise_for_status()
+                data = response.json()
+                year_events = data.get('events', [])
+               
                 # Cache the complete data
-                cache_key = f"ncaafb_schedule_{year}"
+                cache_key = f"ncaafb_schedule_{season_year}"
                 self.cache_manager.set(cache_key, year_events)
-                elapsed_time = time.time() - start_time
-                self.logger.info(f"[NCAAFB] Background fetch completed for {year}: {len(year_events)} events cached in {elapsed_time:.1f}s")
-                
-            except Exception as e:
-                self.logger.error(f"[NCAAFB] Background fetch failed for {year}: {e}")
+                elapsed_time = time.time() - start_time                
+                self.logger.info(f"[NCAAFB] Background fetch completed for {season_year}: {len(year_events)} events cached in {elapsed_time:.1f}s")
+            except requests.exceptions.RequestException as e:
+                self.logger.error(f"[NCAAFB] Background fetch failed for {season_year}: {e}")
             finally:
-                self._background_fetching.discard(year)
+                self._background_fetching.discard(season_year)
         
         # Start background thread
         fetch_thread = threading.Thread(target=background_fetch, daemon=True)
@@ -376,7 +336,7 @@ class BaseNCAAFBManager: # Renamed class
             return cached_data
         return []
 
-    def _fetch_data(self, date_str: str = None) -> Optional[Dict]:
+    def _fetch_data(self) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""
         if isinstance(self, NCAAFBLiveManager):
             return self._fetch_ncaa_fb_api_data(use_cache=False)
