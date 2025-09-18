@@ -27,8 +27,8 @@ class BaseNFLManager(Football): # Renamed class
     _last_shared_update = 0
     
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
-        self.logger = logging.getLogger('NCAAFB') # Changed logger name
-        super().__init__(config=config, display_manager=display_manager, cache_manager=cache_manager, logger=self.logger, sport_key="ncaa_fb")
+        self.logger = logging.getLogger('NFL') # Changed logger name
+        super().__init__(config=config, display_manager=display_manager, cache_manager=cache_manager, logger=self.logger, sport_key="nfl")
 
         # Check display modes to determine what data to fetch
         display_modes = self.mode_config.get("display_modes", {})
@@ -212,6 +212,7 @@ class NFLLiveManager(BaseNFLManager, FootballLive): # Renamed class
     """Manager for live NFL games."""
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
+        self.logger = logging.getLogger('NFL Live') # Changed logger name
 
         if self.test_mode:
             # More detailed test game for NFL
@@ -238,10 +239,12 @@ class NFLRecentManager(BaseNFLManager, SportsRecent): # Renamed class
     """Manager for recently completed NFL games."""
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
+        self.logger = logging.getLogger('NFL Recent') # Changed logger name
         self.logger.info(f"Initialized NFLRecentManager with {len(self.favorite_teams)} favorite teams")
 
 class NFLUpcomingManager(BaseNFLManager, SportsUpcoming): # Renamed class
     """Manager for upcoming NFL games."""
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
+        self.logger = logging.getLogger('NFL Upcoming') # Changed logger name
         self.logger.info(f"Initialized NFLUpcomingManager with {len(self.favorite_teams)} favorite teams")

@@ -84,12 +84,12 @@ class SportsCore:
             self.background_service = get_background_service(self.cache_manager, max_workers)
             self.background_fetch_requests = {}  # Track background fetch requests
             self.background_enabled = True
-            self.logger.info(f"[NCAAFB] Background service enabled with {max_workers} workers")
+            self.logger.info(f"Background service enabled with {max_workers} workers")
         else:
             self.background_service = None
             self.background_fetch_requests = {}
             self.background_enabled = False
-            self.logger.info("[NCAAFB] Background service disabled")
+            self.logger.info("Background service disabled")
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Placeholder draw method - subclasses should override."""
@@ -115,7 +115,7 @@ class SportsCore:
             if not hasattr(self, '_last_warning_time'):
                 self._last_warning_time = 0
             if current_time - getattr(self, '_last_warning_time', 0) > 300:
-                self.logger.warning(f"[NCAAFB] No game data available to display in {self.__class__.__name__}")
+                self.logger.warning(f"No game data available to display in {self.__class__.__name__}")
                 setattr(self, '_last_warning_time', current_time)
             return
 
@@ -124,7 +124,7 @@ class SportsCore:
             # display_manager.update_display() should be called within subclass draw methods
             # or after calling display() in the main loop. Let's keep it out of the base display.
         except Exception as e:
-             self.logger.error(f"[NCAAFB] Error during display call in {self.__class__.__name__}: {e}", exc_info=True)
+             self.logger.error(f"Error during display call in {self.__class__.__name__}: {e}", exc_info=True)
 
 
     def _load_fonts(self):
@@ -137,9 +137,9 @@ class SportsCore:
             fonts['status'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6) # Using 4x6 for status
             fonts['detail'] = ImageFont.truetype("assets/fonts/4x6-font.ttf", 6) # Added detail font
             fonts['rank'] = ImageFont.truetype("assets/fonts/PressStart2P-Regular.ttf", 10)
-            logging.info("[NCAAFB] Successfully loaded fonts") # Changed log prefix
+            logging.info("Successfully loaded fonts") # Changed log prefix
         except IOError:
-            logging.warning("[NCAAFB] Fonts not found, using default PIL font.") # Changed log prefix
+            logging.warning("Fonts not found, using default PIL font.") # Changed log prefix
             fonts['score'] = ImageFont.load_default()
             fonts['time'] = ImageFont.load_default()
             fonts['team'] = ImageFont.load_default()
@@ -377,12 +377,12 @@ class SportsUpcoming(SportsCore):
         try:
             data = self._fetch_data() # Uses shared cache
             if not data or 'events' not in data:
-                self.logger.warning("[NCAAFB Upcoming] No events found in shared data.") # Changed log prefix
+                self.logger.warning("No events found in shared data.") # Changed log prefix
                 if not self.games_list: self.current_game = None
                 return
 
             events = data['events']
-            # self.logger.info(f"[NCAAFB Upcoming] Processing {len(events)} events from shared data.") # Changed log prefix
+            # self.logger.info(f"Processing {len(events)} events from shared data.") # Changed log prefix
 
             processed_games = []
             favorite_games_found = 0
@@ -411,8 +411,8 @@ class SportsUpcoming(SportsCore):
                         self._fetch_odds(game)
 
             # Enhanced logging for debugging
-            self.logger.info(f"[NCAAFB Upcoming] Found {all_upcoming_games} total upcoming games in data")
-            self.logger.info(f"[NCAAFB Upcoming] Found {len(processed_games)} upcoming games after filtering")
+            self.logger.info(f"Found {all_upcoming_games} total upcoming games in data")
+            self.logger.info(f"Found {len(processed_games)} upcoming games after filtering")
             
             # Debug: Check what statuses we're seeing
             status_counts = {}
@@ -441,18 +441,18 @@ class SportsUpcoming(SportsCore):
                     
                     # Special check for Tennessee game (Georgia @ Tennessee)
                     if (game['home_abbr'] == 'TENN' and game['away_abbr'] == 'UGA') or (game['home_abbr'] == 'UGA' and game['away_abbr'] == 'TENN'):
-                        self.logger.info(f"[NCAAFB DEBUG] Found Tennessee game: {game['away_abbr']} @ {game['home_abbr']} - {status} - {game.get('start_time_utc')} - ESPN: {status_name} ({status_state})")
+                        self.logger.info(f"Found Tennessee game: {game['away_abbr']} @ {game['home_abbr']} - {status} - {game.get('start_time_utc')} - ESPN: {status_name} ({status_state})")
             
-            self.logger.info(f"[NCAAFB Upcoming] Status breakdown: {status_counts}")
-            self.logger.info(f"[NCAAFB Upcoming] ESPN status names: {status_names}")
+            self.logger.info(f"Status breakdown: {status_counts}")
+            self.logger.info(f"ESPN status names: {status_names}")
             if favorite_team_games:
-                self.logger.info(f"[NCAAFB Upcoming] Favorite team games found: {len(favorite_team_games)}")
+                self.logger.info(f"Favorite team games found: {len(favorite_team_games)}")
                 for game in favorite_team_games[:3]:  # Show first 3
-                    self.logger.info(f"[NCAAFB Upcoming]   {game['teams']} - {game['status']} - {game['date']} - ESPN: {game['espn_status']}")
+                    self.logger.info(f"  {game['teams']} - {game['status']} - {game['date']} - ESPN: {game['espn_status']}")
             
             if self.favorite_teams and all_upcoming_games > 0:
-                self.logger.info(f"[NCAAFB Upcoming] Favorite teams: {self.favorite_teams}")
-                self.logger.info(f"[NCAAFB Upcoming] Found {favorite_games_found} favorite team upcoming games")
+                self.logger.info(f"Favorite teams: {self.favorite_teams}")
+                self.logger.info(f"Found {favorite_games_found} favorite team upcoming games")
 
             # Filter for favorite teams only if the config is set
             if self.mode_config.get("show_favorite_teams_only", False):
@@ -495,7 +495,7 @@ class SportsUpcoming(SportsCore):
             current_game_ids = {g['id'] for g in self.games_list}
 
             if new_game_ids != current_game_ids:
-                 self.logger.info(f"[NCAAFB Upcoming] Found {len(team_games)} upcoming games within window for display.") # Changed log prefix
+                 self.logger.info(f"Found {len(team_games)} upcoming games within window for display.") # Changed log prefix
                  self.games_list = team_games
                  if not self.current_game or not self.games_list or self.current_game['id'] not in new_game_ids:
                       self.current_game_index = 0
@@ -514,19 +514,19 @@ class SportsUpcoming(SportsCore):
                  self.current_game = self.games_list[self.current_game_index] # Update data
 
             if not self.games_list:
-                 self.logger.info("[NCAAFB Upcoming] No relevant upcoming games found to display.") # Changed log prefix
+                 self.logger.info("No relevant upcoming games found to display.") # Changed log prefix
                  self.current_game = None
 
             if should_log and not self.games_list:
                  # Log favorite teams only if no games are found and logging is needed
-                 self.logger.debug(f"[NCAAFB Upcoming] Favorite teams: {self.favorite_teams}") # Changed log prefix
-                 self.logger.debug(f"[NCAAFB Upcoming] Total upcoming games before filtering: {len(processed_games)}") # Changed log prefix
+                 self.logger.debug(f"Favorite teams: {self.favorite_teams}") # Changed log prefix
+                 self.logger.debug(f"Total upcoming games before filtering: {len(processed_games)}") # Changed log prefix
                  self.last_log_time = current_time
             elif should_log:
                 self.last_log_time = current_time
 
         except Exception as e:
-            self.logger.error(f"[NCAAFB Upcoming] Error updating upcoming games: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error updating upcoming games: {e}", exc_info=True) # Changed log prefix
             # self.current_game = None # Decide if clear on error
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
@@ -540,7 +540,7 @@ class SportsUpcoming(SportsCore):
             away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game["away_logo_url"])
 
             if not home_logo or not away_logo:
-                self.logger.error(f"[NCAAFB Upcoming] Failed to load logos for game: {game.get('id')}") # Changed log prefix
+                self.logger.error(f"Failed to load logos for game: {game.get('id')}") # Changed log prefix
                 draw_final = ImageDraw.Draw(main_img.convert('RGB'))
                 self._draw_text_with_outline(draw_final, "Logo Error", (5,5), self.fonts['status'])
                 self.display_manager.image.paste(main_img.convert('RGB'), (0, 0))
@@ -675,7 +675,7 @@ class SportsUpcoming(SportsCore):
             self.display_manager.update_display() # Update display here
 
         except Exception as e:
-            self.logger.error(f"[NCAAFB Upcoming] Error displaying upcoming game: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error displaying upcoming game: {e}", exc_info=True) # Changed log prefix
 
     def display(self, force_clear=False):
         """Display upcoming games, handling switching."""
@@ -686,7 +686,7 @@ class SportsUpcoming(SportsCore):
             current_time = time.time()
             # Log warning periodically if no games found
             if current_time - self.last_warning_time > self.warning_cooldown:
-                self.logger.info("[NCAAFB Upcoming] No upcoming games found for favorite teams to display.") # Changed log prefix
+                self.logger.info("No upcoming games found for favorite teams to display.") # Changed log prefix
                 self.last_warning_time = current_time
             return # Skip display update
 
@@ -699,14 +699,14 @@ class SportsUpcoming(SportsCore):
                 self.current_game = self.games_list[self.current_game_index]
                 self.last_game_switch = current_time
                 force_clear = True # Force redraw on switch
-                self.logger.debug(f"[NCAAFB Upcoming] Switched to game index {self.current_game_index}") # Changed log prefix
+                self.logger.debug(f"Switched to game index {self.current_game_index}") # Changed log prefix
 
             if self.current_game:
                 self._draw_scorebug_layout(self.current_game, force_clear)
             # update_display() is called within _draw_scorebug_layout for upcoming
 
         except Exception as e:
-            self.logger.error(f"[NCAAFB Upcoming] Error in display loop: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error in display loop: {e}", exc_info=True) # Changed log prefix
 
 
 class SportsRecent(SportsCore):
@@ -720,7 +720,6 @@ class SportsRecent(SportsCore):
         self.update_interval = 300 # Check for recent games every 5 mins
         self.last_game_switch = 0
         self.game_display_duration = 15 # Display each recent game for 15 seconds
-        self.logger.info(f"Initialized NCAAFBRecentManager with {len(self.favorite_teams)} favorite teams") # Changed log prefix
 
     def update(self):
         """Update recent games data."""
@@ -738,18 +737,18 @@ class SportsRecent(SportsCore):
         try:
             data = self._fetch_data() # Uses shared cache
             if not data or 'events' not in data:
-                self.logger.warning("[NCAAFB Recent] No events found in shared data.") # Changed log prefix
+                self.logger.warning("No events found in shared data.") # Changed log prefix
                 if not self.games_list: self.current_game = None # Clear display if no games were showing
                 return
 
             events = data['events']
             print(str(events)[:100])
-            # self.logger.info(f"[NCAAFB Recent] Processing {len(events)} events from shared data.") # Changed log prefix
+            # self.logger.info(f"Processing {len(events)} events from shared data.") # Changed log prefix
 
             # Define date range for "recent" games (last 21 days to capture games from 3 weeks ago)
             now = datetime.now(timezone.utc)
             recent_cutoff = now - timedelta(days=21)
-            self.logger.info(f"[NCAAFB Recent DEBUG] Current time: {now}, Recent cutoff: {recent_cutoff} (21 days ago)")
+            self.logger.info(f"Current time: {now}, Recent cutoff: {recent_cutoff} (21 days ago)")
             
             # Process games and filter for final games, date range & favorite teams
             processed_games = []
@@ -768,7 +767,7 @@ class SportsRecent(SportsCore):
                             
                         # Special check for Tennessee game in recent games
                         if (game['home_abbr'] == 'TENN' and game['away_abbr'] == 'UGA') or (game['home_abbr'] == 'UGA' and game['away_abbr'] == 'TENN'):
-                            self.logger.info(f"[NCAAFB Recent DEBUG] Found Tennessee game in recent: {game['away_abbr']} @ {game['home_abbr']} - {game.get('start_time_utc')} - Score: {game['away_score']}-{game['home_score']}")
+                            self.logger.info(f"Found Tennessee game in recent: {game['away_abbr']} @ {game['home_abbr']} - {game.get('start_time_utc')} - Score: {game['away_score']}-{game['home_score']}")
 
             # Filter for favorite teams
             if self.favorite_teams:
@@ -776,7 +775,7 @@ class SportsRecent(SportsCore):
                 favorite_team_games = [game for game in processed_games
                                       if game['home_abbr'] in self.favorite_teams or
                                          game['away_abbr'] in self.favorite_teams]
-                self.logger.info(f"[NCAAFB Recent] Found {favorite_games_found} favorite team games out of {len(processed_games)} total final games within last 21 days")
+                self.logger.info(f"Found {favorite_games_found} favorite team games out of {len(processed_games)} total final games within last 21 days")
                 
                 # Select one game per favorite team (most recent game for each team)
                 team_games = []
@@ -795,10 +794,10 @@ class SportsRecent(SportsCore):
                 
                 # Debug: Show which games are selected for display
                 for i, game in enumerate(team_games):
-                    self.logger.info(f"[NCAAFB Recent DEBUG] Game {i+1} for display: {game['away_abbr']} @ {game['home_abbr']} - {game.get('start_time_utc')} - Score: {game['away_score']}-{game['home_score']}")
+                    self.logger.info(f"Game {i+1} for display: {game['away_abbr']} @ {game['home_abbr']} - {game.get('start_time_utc')} - Score: {game['away_score']}-{game['home_score']}")
             else:
                  team_games = processed_games # Show all recent games if no favorites defined
-                 self.logger.info(f"[NCAAFB Recent] Found {len(processed_games)} total final games within last 21 days (no favorite teams configured)")
+                 self.logger.info(f"Found {len(processed_games)} total final games within last 21 days (no favorite teams configured)")
                  # Sort by game time, most recent first
                  team_games.sort(key=lambda g: g.get('start_time_utc') or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
                  # Limit to the specified number of recent games
@@ -809,7 +808,7 @@ class SportsRecent(SportsCore):
             current_game_ids = {g['id'] for g in self.games_list}
 
             if new_game_ids != current_game_ids:
-                self.logger.info(f"[NCAAFB Recent] Found {len(team_games)} final games within window for display.") # Changed log prefix
+                self.logger.info(f"Found {len(team_games)} final games within window for display.") # Changed log prefix
                 self.games_list = team_games
                 # Reset index if list changed or current game removed
                 if not self.current_game or not self.games_list or self.current_game['id'] not in new_game_ids:
@@ -831,11 +830,11 @@ class SportsRecent(SportsCore):
                  self.current_game = self.games_list[self.current_game_index]
 
             if not self.games_list:
-                 self.logger.info("[NCAAFB Recent] No relevant recent games found to display.") # Changed log prefix
+                 self.logger.info("No relevant recent games found to display.") # Changed log prefix
                  self.current_game = None # Ensure display clears if no games
 
         except Exception as e:
-            self.logger.error(f"[NCAAFB Recent] Error updating recent games: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error updating recent games: {e}", exc_info=True) # Changed log prefix
             # Don't clear current game on error, keep showing last known state
             # self.current_game = None # Decide if we want to clear display on error
 
@@ -850,7 +849,7 @@ class SportsRecent(SportsCore):
             away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game["away_logo_url"])
 
             if not home_logo or not away_logo:
-                self.logger.error(f"[NCAAFB Recent] Failed to load logos for game: {game.get('id')}") # Changed log prefix
+                self.logger.error(f"Failed to load logos for game: {game.get('id')}") # Changed log prefix
                 # Draw placeholder text if logos fail (similar to live)
                 draw_final = ImageDraw.Draw(main_img.convert('RGB'))
                 self._draw_text_with_outline(draw_final, "Logo Error", (5,5), self.fonts['status'])
@@ -979,7 +978,7 @@ class SportsRecent(SportsCore):
             self.display_manager.update_display() # Update display here
 
         except Exception as e:
-            self.logger.error(f"[NCAAFB Recent] Error displaying recent game: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error displaying recent game: {e}", exc_info=True) # Changed log prefix
 
     def display(self, force_clear=False):
         """Display recent games, handling switching."""
@@ -999,14 +998,14 @@ class SportsRecent(SportsCore):
                 self.current_game = self.games_list[self.current_game_index]
                 self.last_game_switch = current_time
                 force_clear = True # Force redraw on switch
-                self.logger.debug(f"[NCAAFB Recent] Switched to game index {self.current_game_index}") # Changed log prefix
+                self.logger.debug(f"Switched to game index {self.current_game_index}") # Changed log prefix
 
             if self.current_game:
                 self._draw_scorebug_layout(self.current_game, force_clear)
             # update_display() is called within _draw_scorebug_layout for recent
 
         except Exception as e:
-            self.logger.error(f"[NCAAFB Recent] Error in display loop: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error in display loop: {e}", exc_info=True) # Changed log prefix
 
 class Football(SportsCore):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
@@ -1031,13 +1030,13 @@ class Football(SportsCore):
             try:
                 start_time_utc = datetime.fromisoformat(game_date_str.replace("Z", "+00:00"))
             except ValueError:
-                logging.warning(f"[NCAAFB] Could not parse game date: {game_date_str}")
+                logging.warning(f"Could not parse game date: {game_date_str}")
 
             home_team = next((c for c in competitors if c.get("homeAway") == "home"), None)
             away_team = next((c for c in competitors if c.get("homeAway") == "away"), None)
 
             if not home_team or not away_team:
-                 self.logger.warning(f"[NCAAFB] Could not find home or away team in event: {game_event.get('id')}")
+                 self.logger.warning(f"Could not find home or away team in event: {game_event.get('id')}")
                  return None
 
             home_abbr = home_team["team"]["abbreviation"]
@@ -1048,8 +1047,8 @@ class Football(SportsCore):
             
             # Only log debug info for favorite team games
             if is_favorite_game:
-                self.logger.debug(f"[NCAAFB] Processing favorite team game: {game_event.get('id')}")
-                self.logger.debug(f"[NCAAFB] Found teams: {away_abbr}@{home_abbr}, Status: {status['type']['name']}, State: {status['type']['state']}")
+                self.logger.debug(f"Processing favorite team game: {game_event.get('id')}")
+                self.logger.debug(f"Found teams: {away_abbr}@{home_abbr}, Status: {status['type']['name']}, State: {status['type']['state']}")
             
             home_record = home_team.get('records', [{}])[0].get('summary', '') if home_team.get('records') else ''
             away_record = away_team.get('records', [{}])[0].get('summary', '') if away_team.get('records') else ''
@@ -1184,15 +1183,15 @@ class Football(SportsCore):
 
             # Basic validation (can be expanded)
             if not details['home_abbr'] or not details['away_abbr']:
-                 self.logger.warning(f"[NCAAFB] Missing team abbreviation in event: {details['id']}")
+                 self.logger.warning(f"Missing team abbreviation in event: {details['id']}")
                  return None
 
-            self.logger.debug(f"[NCAAFB] Extracted: {details['away_abbr']}@{details['home_abbr']}, Status: {status['type']['name']}, Live: {details['is_live']}, Final: {details['is_final']}, Upcoming: {details['is_upcoming']}")
+            self.logger.debug(f"Extracted: {details['away_abbr']}@{details['home_abbr']}, Status: {status['type']['name']}, Live: {details['is_live']}, Final: {details['is_final']}, Upcoming: {details['is_upcoming']}")
 
             return details
         except Exception as e:
             # Log the problematic event structure if possible
-            logging.error(f"[NCAAFB] Error extracting game details: {e} from event: {game_event.get('id')}", exc_info=True)
+            logging.error(f"Error extracting game details: {e} from event: {game_event.get('id')}", exc_info=True)
             return None
 
 class FootballLive(Football):
@@ -1201,7 +1200,6 @@ class FootballLive(Football):
         self.update_interval = self.mode_config.get("live_update_interval", 15)
         self.no_data_interval = 300
         self.last_update = 0
-        self.logger.info("Initialized NCAAFB Live Manager")
         self.live_games = []
         self.current_game_index = 0
         self.last_game_switch = 0
@@ -1273,7 +1271,7 @@ class FootballLive(Football):
                         # self.display(force_clear=True) # Only if immediate update is desired here
 
                     except ValueError:
-                        self.logger.warning("[NCAAFB] Test mode: Could not parse clock") # Changed log prefix
+                        self.logger.warning("Test mode: Could not parse clock") # Changed log prefix
                 # No actual display call here, let main loop handle it
             else:
                 # Fetch live game data
@@ -1307,12 +1305,12 @@ class FootballLive(Football):
                     if should_log:
                         if new_live_games:
                             filter_text = "favorite teams" if self.mode_config.get("show_favorite_teams_only", False) else "all teams"
-                            self.logger.info(f"[NCAAFB] Found {len(new_live_games)} live/halftime games for {filter_text}.")
+                            self.logger.info(f"Found {len(new_live_games)} live/halftime games for {filter_text}.")
                             for game_info in new_live_games: # Renamed game to game_info
                                 self.logger.info(f"  - {game_info['away_abbr']}@{game_info['home_abbr']} ({game_info.get('status_text', 'N/A')})")
                         else:
                             filter_text = "favorite teams" if self.mode_config.get("show_favorite_teams_only", False) else "criteria"
-                            self.logger.info(f"[NCAAFB] No live/halftime games found for {filter_text}.")
+                            self.logger.info(f"No live/halftime games found for {filter_text}.")
                         self.last_log_time = current_time_for_log
 
 
@@ -1351,7 +1349,7 @@ class FootballLive(Football):
                     else:
                         # No live games found
                         if self.live_games: # Were there games before?
-                             self.logger.info("[NCAAFB] Live games previously showing have ended or are no longer live.") # Changed log prefix
+                             self.logger.info("Live games previously showing have ended or are no longer live.") # Changed log prefix
                         self.live_games = []
                         self.current_game = None
                         self.current_game_index = 0
@@ -1359,9 +1357,9 @@ class FootballLive(Football):
                 else:
                     # Error fetching data or no events
                      if self.live_games: # Were there games before?
-                         self.logger.warning("[NCAAFB] Could not fetch update; keeping existing live game data for now.") # Changed log prefix
+                         self.logger.warning("Could not fetch update; keeping existing live game data for now.") # Changed log prefix
                      else:
-                         self.logger.warning("[NCAAFB] Could not fetch data and no existing live games.") # Changed log prefix
+                         self.logger.warning("Could not fetch data and no existing live games.") # Changed log prefix
                          self.current_game = None # Clear current game if fetch fails and no games were active
 
             # Handle game switching (outside test mode check)
@@ -1369,7 +1367,7 @@ class FootballLive(Football):
                 self.current_game_index = (self.current_game_index + 1) % len(self.live_games)
                 self.current_game = self.live_games[self.current_game_index]
                 self.last_game_switch = current_time
-                self.logger.info(f"[NCAAFB] Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}") # Changed log prefix
+                self.logger.info(f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}") # Changed log prefix
                 # Force display update via flag or direct call if needed, but usually let main loop handle
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
@@ -1383,7 +1381,7 @@ class FootballLive(Football):
             away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game["away_logo_url"])
 
             if not home_logo or not away_logo:
-                self.logger.error(f"[NCAAFB] Failed to load logos for live game: {game.get('id')}") # Changed log prefix
+                self.logger.error(f"Failed to load logos for live game: {game.get('id')}") # Changed log prefix
                 # Draw placeholder text if logos fail
                 draw_final = ImageDraw.Draw(main_img.convert('RGB'))
                 self._draw_text_with_outline(draw_final, "Logo Error", (5,5), self.fonts['status'])
@@ -1600,4 +1598,4 @@ class FootballLive(Football):
             self.display_manager.update_display() # Update display here for live
 
         except Exception as e:
-            self.logger.error(f"Error displaying live NCAAFB game: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error displaying live Football game: {e}", exc_info=True) # Changed log prefix
