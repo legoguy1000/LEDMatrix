@@ -4,16 +4,12 @@ import logging
 import requests
 import json
 from typing import Dict, Any, Optional, List
-from PIL import Image, ImageDraw, ImageFont
-from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from src.display_manager import DisplayManager
 from src.cache_manager import CacheManager # Keep CacheManager import
-from src.logo_downloader import download_missing_logo
 import pytz
-from src.logo_downloader import LogoDownloader
-from pathlib import Path
-from src.display_functions import Football, SportsUpcoming, SportsRecent, FootballLive
+from src.base_classes.sports import SportsRecent, SportsUpcoming
+from src.base_classes.football import Football, FootballLive
 # Constants
 ESPN_NCAAFB_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard" # Changed URL for NCAA FB
 

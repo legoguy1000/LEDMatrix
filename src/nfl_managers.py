@@ -1,19 +1,15 @@
 import os
-import time
 import logging
 import requests
-import json
 from typing import Dict, Any, Optional, List
-from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from src.display_manager import DisplayManager
 from src.cache_manager import CacheManager
-from src.config_manager import ConfigManager
-from src.odds_manager import OddsManager
-from src.background_data_service import get_background_service
 import pytz
-from src.display_functions import Football, SportsRecent, SportsUpcoming, FootballLive
+from src.base_classes.sports import SportsRecent, SportsUpcoming
+from src.base_classes.football import Football, FootballLive
+
 # Constants
 ESPN_NFL_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
 
@@ -42,7 +38,7 @@ class BaseNFLManager(Football): # Renamed class
 
 
     def _fetch_odds(self, game: Dict) -> None:
-        super()._fetch_odds(game, "college-football")
+        super()._fetch_odds(game, "nfl")
     
     def _fetch_nfl_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
