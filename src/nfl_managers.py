@@ -158,8 +158,11 @@ class BaseNFLManager: # Renamed class
         Returns cached data immediately if available, otherwise starts background fetch.
         """
         now = datetime.now(pytz.utc)
-        current_year = now.year
-        cache_key = f"nfl_schedule_{current_year}"
+        season_year = now.year
+        if now.month < 8:
+            season_year = now.year - 1
+        datestring = f"{season_year}0801-{season_year+1}0301"
+        cache_key = f"nfl_schedule_{season_year}"
 
         # Check cache first
         if use_cache:
@@ -167,14 +170,14 @@ class BaseNFLManager: # Renamed class
             if cached_data:
                 # Validate cached data structure
                 if isinstance(cached_data, dict) and 'events' in cached_data:
-                    self.logger.info(f"[NFL] Using cached schedule for {current_year}")
+                    self.logger.info(f"[NFL] Using cached schedule for {season_year}")
                     return cached_data
                 elif isinstance(cached_data, list):
                     # Handle old cache format (list of events)
-                    self.logger.info(f"[NFL] Using cached schedule for {current_year} (legacy format)")
+                    self.logger.info(f"[NFL] Using cached schedule for {season_year} (legacy format)")
                     return {'events': cached_data}
                 else:
-                    self.logger.warning(f"[NFL] Invalid cached data format for {current_year}: {type(cached_data)}")
+                    self.logger.warning(f"[NFL] Invalid cached data format for {season_year}: {type(cached_data)}")
                     # Clear invalid cache
                     self.cache_manager.delete(cache_key)
         
@@ -183,12 +186,12 @@ class BaseNFLManager: # Renamed class
             return self._fetch_nfl_api_data_sync(use_cache)
         
         # Check if we already have a background fetch in progress
-        if current_year in self.background_fetch_requests:
-            request_id = self.background_fetch_requests[current_year]
+        if season_year in self.background_fetch_requests:
+            request_id = self.background_fetch_requests[season_year]
             result = self.background_service.get_result(request_id)
             
             if result and result.success:
-                self.logger.info(f"[NFL] Background fetch completed for {current_year}")
+                self.logger.info(f"[NFL] Background fetch completed for {season_year}")
                 # Validate result data structure
                 if isinstance(result.data, dict) and 'events' in result.data:
                     return result.data
@@ -199,30 +202,30 @@ class BaseNFLManager: # Renamed class
                     self.logger.error(f"[NFL] Invalid background fetch result format: {type(result.data)}")
                     return None
             elif result and not result.success:
-                self.logger.warning(f"[NFL] Background fetch failed for {current_year}: {result.error}")
+                self.logger.warning(f"[NFL] Background fetch failed for {season_year}: {result.error}")
                 # Remove failed request and try again
-                del self.background_fetch_requests[current_year]
+                del self.background_fetch_requests[season_year]
             else:
-                self.logger.info(f"[NFL] Background fetch in progress for {current_year}, using partial data")
+                self.logger.info(f"[NFL] Background fetch in progress for {season_year}, using partial data")
                 # Return partial data if available, or None to indicate no data yet
-                partial_data = self._get_partial_nfl_data(current_year)
+                partial_data = self._get_partial_nfl_data(season_year)
                 if partial_data:
                     return {'events': partial_data}
                 return None
         
         # Start background fetch
-        self.logger.info(f"[NFL] Starting background fetch for {current_year} season schedule...")
+        self.logger.info(f"[NFL] Starting background fetch for {season_year} season schedule...")
         
         def fetch_callback(result):
             """Callback when background fetch completes."""
             if result.success:
-                self.logger.info(f"[NFL] Background fetch completed for {current_year}: {len(result.data)} events")
+                self.logger.info(f"[NFL] Background fetch completed for {season_year}: {len(result.data)} events")
             else:
-                self.logger.error(f"[NFL] Background fetch failed for {current_year}: {result.error}")
+                self.logger.error(f"[NFL] Background fetch failed for {season_year}: {result.error}")
             
             # Clean up request tracking
-            if current_year in self.background_fetch_requests:
-                del self.background_fetch_requests[current_year]
+            if season_year in self.background_fetch_requests:
+                del self.background_fetch_requests[season_year]
         
         # Get background service configuration
         background_config = self.nfl_config.get("background_service", {})
@@ -231,13 +234,12 @@ class BaseNFLManager: # Renamed class
         priority = background_config.get("priority", 2)
         
         # Submit background fetch request
-        url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
         request_id = self.background_service.submit_fetch_request(
             sport="nfl",
-            year=current_year,
-            url=url,
+            year=season_year,
+            url=ESPN_NFL_SCOREBOARD_URL,
             cache_key=cache_key,
-            params={"dates": current_year, "limit": 1000},
+            params={"dates": datestring, "limit": 1000},
             headers=self.headers,
             timeout=timeout,
             max_retries=max_retries,
@@ -246,10 +248,10 @@ class BaseNFLManager: # Renamed class
         )
         
         # Track the request
-        self.background_fetch_requests[current_year] = request_id
+        self.background_fetch_requests[season_year] = request_id
         
         # For immediate response, try to get partial data
-        partial_data = self._get_partial_nfl_data(current_year)
+        partial_data = self._get_partial_nfl_data(now.year)
         if partial_data:
             return {'events': partial_data}
         
@@ -265,8 +267,7 @@ class BaseNFLManager: # Renamed class
 
         self.logger.info(f"[NFL] Fetching full {current_year} season schedule from ESPN API (sync mode)...")
         try:
-            url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-            response = self.session.get(url, params={"dates": current_year, "limit":1000}, headers=self.headers, timeout=15)
+            response = self.session.get(ESPN_NFL_SCOREBOARD_URL, params={"dates": current_year, "limit":1000}, headers=self.headers, timeout=15)
             response.raise_for_status()
             data = response.json()
             events = data.get('events', [])
@@ -294,8 +295,7 @@ class BaseNFLManager: # Renamed class
             end_date = now + timedelta(days=7)
             date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
             
-            url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={date_str}"
-            response = self.session.get(url, headers=self.headers, timeout=10)
+            response = self.session.get(ESPN_NFL_SCOREBOARD_URL, params={"dates": date_str},headers=self.headers, timeout=10)
             response.raise_for_status()
             data = response.json()
             immediate_events = data.get('events', [])

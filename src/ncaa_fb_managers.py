@@ -255,13 +255,13 @@ class BaseNCAAFBManager: # Renamed class
         
         # For immediate response, fetch current/recent games only
         
-        if not (year_events := self._fetch_immediate_games(season_year)):
+        if not (year_events := self._fetch_immediate_games()):
             self.logger.warning("[NCAAFB] No events found in schedule data.")
             return None
         
         return {'events': year_events}
     
-    def _fetch_immediate_games(self, year: int) -> List[Dict]:
+    def _fetch_immediate_games(self) -> List[Dict]:
         """Fetch immediate games (current week + next few days) for quick display."""
         immediate_events = []
         
@@ -283,7 +283,7 @@ class BaseNCAAFBManager: # Renamed class
                     self.logger.debug(f"[NCAAFB] Immediate fetch - Current date ({date_str}): {len(date_events)} events")
                     
         except requests.exceptions.RequestException as e:
-            self.logger.warning(f"[NCAAFB] Error fetching immediate games for {year}: {e}")
+            self.logger.warning(f"[NCAAFB] Error fetching immediate games for {now}: {e}")
         
         return immediate_events
     
