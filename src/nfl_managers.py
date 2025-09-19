@@ -313,11 +313,29 @@ class BaseNFLManager: # Renamed class
         
         return None
 
+    def _fetch_current_nfl_games(self) -> Optional[Dict]:
+        """Fetch only current NFL games for live updates (not entire season)."""
+        try:
+            # Fetch current week's games only
+            url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+            response = self.session.get(url, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            events = data.get('events', [])
+            
+            self.logger.info(f"[NFL Live] Fetched {len(events)} current games")
+            return {'events': events}
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"[NFL Live] API error fetching current games: {e}")
+            return None
+
     def _fetch_data(self, date_str: str = None) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""
         if isinstance(self, NFLLiveManager):
-            return self._fetch_nfl_api_data(use_cache=False)
+            # Live games should fetch only current games, not entire season
+            return self._fetch_current_nfl_games()
         else:
+            # Recent and Upcoming managers should use cached season data
             return self._fetch_nfl_api_data(use_cache=True)
 
     def _load_fonts(self):
@@ -572,8 +590,8 @@ class BaseNFLManager: # Renamed class
             # Timeouts (assuming max 3 per half, not carried over well in standard API)
             # API often provides 'timeouts' directly under team, but reset logic is tricky
             # We might need to simplify this or just use a fixed display if API is unreliable
-            home_timeouts = home_team.get("timeouts", 3) # Default to 3 if not specified
-            away_timeouts = away_team.get("timeouts", 3) # Default to 3 if not specified
+            home_timeouts = situation.get("homeTimeouts", 3) if situation else 3 # Default to 3 if not specified
+            away_timeouts = situation.get("awayTimeouts", 3) if situation else 3 # Default to 3 if not specified
 
 
             details = {
@@ -1005,7 +1023,7 @@ class NFLRecentManager(BaseNFLManager): # Renamed class
         self.games_list = [] # Filtered list for display (favorite teams)
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 300 # Check for recent games every 5 mins
+        self.update_interval = self.nfl_config.get("recent_update_interval", 3600) # Check for recent games every hour
         self.last_game_switch = 0
         self.game_display_duration = 15 # Display each recent game for 15 seconds
         self.logger.info(f"Initialized NFLRecentManager with {len(self.favorite_teams)} favorite teams")
@@ -1245,7 +1263,7 @@ class NFLUpcomingManager(BaseNFLManager): # Renamed class
         self.games_list = [] # Filtered list for display (favorite teams)
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 300 # Check for upcoming games every 5 mins
+        self.update_interval = self.nfl_config.get("upcoming_update_interval", 3600) # Check for upcoming games every hour
         self.last_log_time = 0
         self.log_interval = 300
         self.last_warning_time = 0
