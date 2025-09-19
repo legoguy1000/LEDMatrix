@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 import pytz
 import time
 from src.background_data_service import get_background_service
-from src.logo_downloader import download_missing_logo
+from src.logo_downloader import download_missing_logo, LogoDownloader
 from pathlib import Path
 
 class SportsCore:
@@ -32,7 +32,7 @@ class SportsCore:
         self.is_enabled = self.mode_config.get("enabled", False)
         self.show_odds = self.mode_config.get("show_odds", False)
         self.test_mode = self.mode_config.get("test_mode", False)
-        self.logo_dir = self.mode_config.get("logo_dir", "assets/sports/ncaa_logos") # Changed logo dir
+        self.logo_dir = Path(self.mode_config.get("logo_dir", "assets/sports/ncaa_logos")) # Changed logo dir
         self.update_interval = self.mode_config.get(
             "update_interval_seconds", 60)
         self.show_records = self.mode_config.get('show_records', False)
@@ -338,9 +338,97 @@ class SportsCore:
     def _fetch_team_rankings(self) -> Dict[str, int]:
         return {}
 
-    def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
-        pass
+    def _extract_game_details_common(self, game_event: Dict) -> tuple[Dict | None, Dict | None, Dict | None, Dict | None, Dict | None]:
+        if not game_event: 
+            return None, None, None, None, None
+        try:
+            competition = game_event["competitions"][0]
+            status = competition["status"]
+            competitors = competition["competitors"]
+            game_date_str = game_event["date"]
+            situation = competition.get("situation")
+            start_time_utc = None
+            try:
+                start_time_utc = datetime.fromisoformat(game_date_str.replace("Z", "+00:00"))
+            except ValueError:
+                logging.warning(f"Could not parse game date: {game_date_str}")
 
+            home_team = next((c for c in competitors if c.get("homeAway") == "home"), None)
+            away_team = next((c for c in competitors if c.get("homeAway") == "away"), None)
+
+            if not home_team or not away_team:
+                self.logger.warning(f"Could not find home or away team in event: {game_event.get('id')}")
+                return None, None, None, None, None
+
+            home_abbr = home_team["team"]["abbreviation"]
+            away_abbr = away_team["team"]["abbreviation"]
+            
+            # Check if this is a favorite team game BEFORE doing expensive logging
+            is_favorite_game = (home_abbr in self.favorite_teams or away_abbr in self.favorite_teams)
+            
+            # Only log debug info for favorite team games
+            if is_favorite_game:
+                self.logger.debug(f"Processing favorite team game: {game_event.get('id')}")
+                self.logger.debug(f"Found teams: {away_abbr}@{home_abbr}, Status: {status['type']['name']}, State: {status['type']['state']}")
+            
+            game_time, game_date = "", ""
+            if start_time_utc:
+                local_time = start_time_utc.astimezone(self._get_timezone())
+                game_time = local_time.strftime("%I:%M%p").lstrip('0')
+                
+                # Check date format from config
+                use_short_date_format = self.config.get('display', {}).get('use_short_date_format', False)
+                if use_short_date_format:
+                    game_date = local_time.strftime("%-m/%-d")
+                else:
+                    game_date = self.display_manager.format_date_with_ordinal(local_time)
+
+
+            home_record = home_team.get('records', [{}])[0].get('summary', '') if home_team.get('records') else ''
+            away_record = away_team.get('records', [{}])[0].get('summary', '') if away_team.get('records') else ''
+            
+            # Don't show "0-0" records - set to blank instead
+            if home_record in {"0-0", "0-0-0"}:
+                home_record = ''
+            if away_record == {"0-0", "0-0-0"}:
+                away_record = ''
+
+            details = {
+                "id": game_event.get("id"),
+                "game_time": game_time,
+                "game_date": game_date,
+                "start_time_utc": start_time_utc,
+                "status_text": status["type"]["shortDetail"], # e.g., "Final", "7:30 PM", "Q1 12:34"
+                "is_live": status["type"]["state"] == "in",
+                "is_final": status["type"]["state"] == "post",
+                "is_upcoming": (status["type"]["state"] == "pre" or 
+                               status["type"]["name"].lower() in ['scheduled', 'pre-game', 'status_scheduled']),
+                "is_halftime": status["type"]["state"] == "halftime" or status["type"]["name"] == "STATUS_HALFTIME", # Added halftime check
+                "home_abbr": home_abbr,
+                "home_id": home_team["id"],
+                "home_score": home_team.get("score", "0"),
+                "home_logo_path": self.logo_dir / Path(f"{LogoDownloader.normalize_abbreviation(home_abbr)}.png"),
+                "home_logo_url": home_team["team"].get("logo"),
+                "home_record": home_record,
+                "away_record": away_record,
+                "away_abbr": away_abbr,
+                "away_id": away_team["id"],
+                "away_score": away_team.get("score", "0"),
+                "away_logo_path": self.logo_dir / Path(f"{LogoDownloader.normalize_abbreviation(away_abbr)}.png"),
+                "away_logo_url": away_team["team"].get("logo"),
+                "is_within_window": True, # Whether game is within display window
+
+            }
+            return details, home_team, away_team, status, situation
+        except Exception as e:
+            # Log the problematic event structure if possible
+            logging.error(f"Error extracting game details: {e} from event: {game_event.get('id')}", exc_info=True)
+            return None, None, None, None, None
+
+    def _extract_game_details(self, game_event: dict) -> dict | None:
+        details, _, _, _, _ = self._extract_game_details_common(game_event)
+        return details
+    
     # def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
     #     pass
 

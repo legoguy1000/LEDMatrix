@@ -205,7 +205,7 @@ class NCAAFBLiveManager(BaseNCAAFBManager, FootballLive): # Renamed class
     """Manager for live NCAA FB games.""" # Updated docstring
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config=config, display_manager=display_manager, cache_manager=cache_manager)
-        self.logger = logging.getLogger('NCAA Live') # Changed logger name
+        self.logger = logging.getLogger('NCAAFBLiveManager') # Changed logger name
 
         if self.test_mode:
             # More detailed test game for NCAA FB
@@ -224,20 +224,20 @@ class NCAAFBLiveManager(BaseNCAAFBManager, FootballLive): # Renamed class
                 "status_text": "Q4 01:15"
             }
             self.live_games = [self.current_game]
-            logging.info("[NCAAFB] Initialized NCAAFBLiveManager with test game: AUB vs UGA") # Updated log message
+            logging.info("Initialized NCAAFBLiveManager with test game: AUB vs UGA") # Updated log message
         else:
-            logging.info("[NCAAFB] Initialized NCAAFBLiveManager in live mode") # Updated log message
+            logging.info("Initialized NCAAFBLiveManager in live mode") # Updated log message
 
 class NCAAFBRecentManager(BaseNCAAFBManager, SportsRecent): # Renamed class
     """Manager for recently completed NCAA FB games.""" # Updated docstring
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger('NCAA Recent') # Changed logger name
+        self.logger = logging.getLogger('NCAAFBRecentManager') # Changed logger name
         self.logger.info(f"Initialized NCAAFBRecentManager with {len(self.favorite_teams)} favorite teams") # Changed log prefix
 
 class NCAAFBUpcomingManager(BaseNCAAFBManager, SportsUpcoming): # Renamed class
     """Manager for upcoming NCAA FB games.""" # Updated docstring
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger('NCAA Upcoming') # Changed logger name
+        self.logger = logging.getLogger('NCAAFBRecentManager') # Changed logger name
         self.logger.info(f"Initialized NCAAFBUpcomingManager with {len(self.favorite_teams)} favorite teams") # Changed log prefix
