@@ -82,6 +82,8 @@ class Football(SportsCore):
             down_distance_text = ""
             possession_indicator = None # Default to None
             scoring_event = ""  # Track scoring events
+            home_timeouts = 0
+            away_timeouts = 0
             
             if situation and status["type"]["state"] == "in":
                 down = situation.get("down")
@@ -121,6 +123,10 @@ class Football(SportsCore):
                     elif possession_team_id == away_team.get("id"):
                         possession_indicator = "away"
 
+                home_timeouts = situation.get("homeTimeouts", 3) # Default to 3 if not specified
+                away_timeouts = situation.get("awayTimeouts", 3) # Default to 3 if not specified
+
+
             # Format period/quarter
             period = status.get("period", 0)
             period_text = ""
@@ -142,9 +148,6 @@ class Football(SportsCore):
             # Timeouts (assuming max 3 per half, not carried over well in standard API)
             # API often provides 'timeouts' directly under team, but reset logic is tricky
             # We might need to simplify this or just use a fixed display if API is unreliable
-            home_timeouts = home_team.get("timeouts", 3) # Default to 3 if not specified
-            away_timeouts = away_team.get("timeouts", 3) # Default to 3 if not specified
-
             # For upcoming games, we'll show based on number of games, not time window
             # For recent games, we'll show based on number of games, not time window
             is_within_window = True  # Always include games, let the managers filter by count
@@ -319,6 +322,7 @@ class FootballLive(Football):
 
                     # Update game list and current game
                     if new_live_games:
+                        self.logger.info(new_live_games)
                         # Check if the games themselves changed, not just scores/time
                         new_game_ids = {g['id'] for g in new_live_games}
                         current_game_ids = {g['id'] for g in self.live_games}
@@ -527,7 +531,7 @@ class FootballLive(Football):
                 
                 record_bbox = draw_overlay.textbbox((0,0), "0-0", font=record_font)
                 record_height = record_bbox[3] - record_bbox[1]
-                record_y = self.display_height - record_height
+                record_y = self.display_height - record_height - 4
                 self.logger.debug(f"Record positioning: height={record_height}, record_y={record_y}, display_height={self.display_height}")
 
                 # Display away team info
@@ -556,7 +560,7 @@ class FootballLive(Football):
                         away_text = ''
                     
                     if away_text:
-                        away_record_x = 0
+                        away_record_x = 3
                         self.logger.debug(f"Drawing away ranking '{away_text}' at ({away_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}")
                         self._draw_text_with_outline(draw_overlay, away_text, (away_record_x, record_y), record_font)
 
@@ -588,7 +592,7 @@ class FootballLive(Football):
                     if home_text:
                         home_record_bbox = draw_overlay.textbbox((0,0), home_text, font=record_font)
                         home_record_width = home_record_bbox[2] - home_record_bbox[0]
-                        home_record_x = self.display_width - home_record_width
+                        home_record_x = self.display_width - home_record_width - 3
                         self.logger.debug(f"Drawing home ranking '{home_text}' at ({home_record_x}, {record_y}) with font size {record_font.size if hasattr(record_font, 'size') else 'unknown'}")
                         self._draw_text_with_outline(draw_overlay, home_text, (home_record_x, record_y), record_font)
 

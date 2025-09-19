@@ -73,33 +73,33 @@ class BaseNFLManager(Football): # Renamed class
         if not self.background_enabled or not self.background_service:
             return self._fetch_nfl_api_data_sync(use_cache)
         
-        # Check if we already have a background fetch in progress
-        if season_year in self.background_fetch_requests:
-            request_id = self.background_fetch_requests[season_year]
-            result = self.background_service.get_result(request_id)
+        # # Check if we already have a background fetch in progress
+        # if season_year in self.background_fetch_requests:
+        #     request_id = self.background_fetch_requests[season_year]
+        #     result = self.background_service.get_result(request_id)
             
-            if result and result.success:
-                self.logger.info(f"[NFL] Background fetch completed for {season_year}")
-                # Validate result data structure
-                if isinstance(result.data, dict) and 'events' in result.data:
-                    return result.data
-                elif isinstance(result.data, list):
-                    # Handle case where result.data is just the events list
-                    return {'events': result.data}
-                else:
-                    self.logger.error(f"[NFL] Invalid background fetch result format: {type(result.data)}")
-                    return None
-            elif result and not result.success:
-                self.logger.warning(f"[NFL] Background fetch failed for {season_year}: {result.error}")
-                # Remove failed request and try again
-                del self.background_fetch_requests[season_year]
-            else:
-                self.logger.info(f"[NFL] Background fetch in progress for {season_year}, using partial data")
-                # Return partial data if available, or None to indicate no data yet
-                partial_data = self._get_partial_nfl_data(season_year)
-                if partial_data:
-                    return {'events': partial_data}
-                return None
+        #     if result and result.success:
+        #         self.logger.info(f"[NFL] Background fetch completed for {season_year}")
+        #         # Validate result data structure
+        #         if isinstance(result.data, dict) and 'events' in result.data:
+        #             return result.data
+        #         elif isinstance(result.data, list):
+        #             # Handle case where result.data is just the events list
+        #             return {'events': result.data}
+        #         else:
+        #             self.logger.error(f"[NFL] Invalid background fetch result format: {type(result.data)}")
+        #             return None
+        #     elif result and not result.success:
+        #         self.logger.warning(f"[NFL] Background fetch failed for {season_year}: {result.error}")
+        #         # Remove failed request and try again
+        #         del self.background_fetch_requests[season_year]
+        #     else:
+        #         self.logger.info(f"[NFL] Background fetch in progress for {season_year}, using partial data")
+        #         # Return partial data if available, or None to indicate no data yet
+        #         partial_data = self._get_partial_nfl_data(season_year)
+        #         if partial_data:
+        #             return {'events': partial_data}
+        #         return None
         
         # Start background fetch
         self.logger.info(f"[NFL] Starting background fetch for {season_year} season schedule...")
@@ -199,6 +199,7 @@ class BaseNFLManager(Football): # Renamed class
 
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""
+        self.logger.info(f"The current instance {type(self)}")
         if isinstance(self, NFLLiveManager):
             return self._fetch_nfl_api_data(use_cache=False)
         else:
