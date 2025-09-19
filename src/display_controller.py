@@ -1099,7 +1099,7 @@ class DisplayController:
                     else:
                         # If no sport has live_priority takeover, treat as regular rotation
                         is_currently_live = False
-                else:
+                if not is_currently_live:
                     previous_mode_before_switch = self.current_display_mode
                     if live_priority_takeover:
                         # Switch to first live priority sport
