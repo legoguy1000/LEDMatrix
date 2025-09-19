@@ -581,8 +581,16 @@ class DisplayController:
             # Defer sport manager updates that might do heavy API fetching
             if hasattr(self, 'ncaa_fb_live') and self.ncaa_fb_live:
                 self.display_manager.defer_update(self.ncaa_fb_live.update, priority=3)
+            if hasattr(self, 'ncaa_fb_recent') and self.ncaa_fb_recent:
+                self.display_manager.defer_update(self.ncaa_fb_recent.update, priority=3)
+            if hasattr(self, 'ncaa_fb_upcoming') and self.ncaa_fb_upcoming:
+                self.display_manager.defer_update(self.ncaa_fb_upcoming.update, priority=3)
             if hasattr(self, 'nfl_live') and self.nfl_live:
                 self.display_manager.defer_update(self.nfl_live.update, priority=3)
+            if hasattr(self, 'nfl_recent') and self.nfl_recent:
+                self.display_manager.defer_update(self.nfl_recent.update, priority=3)
+            if hasattr(self, 'nfl_upcoming') and self.nfl_upcoming:
+                self.display_manager.defer_update(self.nfl_upcoming.update, priority=3)
             # Continue with non-scrolling-sensitive updates
             if self.weather: self.weather.get_weather()
             if self.calendar: self.calendar.update(time.time())
