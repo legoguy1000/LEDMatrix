@@ -743,7 +743,6 @@ class SportsRecent(SportsCore):
                 return
 
             events = data['events']
-            print(str(events)[:100])
             # self.logger.info(f"Processing {len(events)} events from shared data.") # Changed log prefix
 
             # Define date range for "recent" games (last 21 days to capture games from 3 weeks ago)
