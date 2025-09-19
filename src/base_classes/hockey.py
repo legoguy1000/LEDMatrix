@@ -19,7 +19,7 @@ class Hockey(SportsCore):
         """Extract relevant game details from ESPN NCAA FB API response."""
         # --- THIS METHOD MAY NEED ADJUSTMENTS FOR NCAA FB API DIFFERENCES ---
         details, home_team, away_team, status, situation = self._extract_game_details_common(game_event)
-        if details is None or home_team is None or away_team is None or status is None or situation is None or details is None:
+        if details is None or home_team is None or away_team is None or status is None:
             return
         try:
             competition = game_event["competitions"][0]
@@ -132,12 +132,12 @@ class HockeyLive(Hockey):
                     
                     if should_log:
                         if new_live_games:
-                            filter_text = "favorite teams" if self.ncaam_hockey_config.get("show_favorite_teams_only", False) else "all teams"
+                            filter_text = "favorite teams" if self.mode_config.get("show_favorite_teams_only", False) else "all teams"
                             self.logger.info(f"[NCAAMH] Found {len(new_live_games)} live games involving {filter_text}")
                             for game in new_live_games:
                                 self.logger.info(f"[NCAAMH] Live game: {game['away_abbr']} vs {game['home_abbr']} - Period {game['period']}, {game['clock']}")
                         else:
-                            filter_text = "favorite teams" if self.ncaam_hockey_config.get("show_favorite_teams_only", False) else "criteria"
+                            filter_text = "favorite teams" if self.mode_config.get("show_favorite_teams_only", False) else "criteria"
                             self.logger.info(f"[NCAAMH] No live games found matching {filter_text}")
                         self.last_log_time = current_time
                     

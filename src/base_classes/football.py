@@ -19,7 +19,7 @@ class Football(SportsCore):
         """Extract relevant game details from ESPN NCAA FB API response."""
         # --- THIS METHOD MAY NEED ADJUSTMENTS FOR NCAA FB API DIFFERENCES ---
         details, home_team, away_team, status, situation = self._extract_game_details_common(game_event)
-        if details is None or home_team is None or away_team is None or status is None or situation is None or details is None:
+        if details is None or home_team is None or away_team is None or status is None:
             return
         try:
             competition = game_event["competitions"][0]

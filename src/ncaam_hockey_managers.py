@@ -32,7 +32,7 @@ class BaseNCAAMHockeyManager(Hockey): # Renamed class
 
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         self.logger = logging.getLogger('NCAAMH') # Changed logger name
-        super().__init__(config=config, display_manager=display_manager, cache_manager=cache_manager, logger=self.logger, sport_key="ncaam_hoockey")
+        super().__init__(config=config, display_manager=display_manager, cache_manager=cache_manager, logger=self.logger, sport_key="ncaam_hockey")
 
         # Check display modes to determine what data to fetch
         display_modes = self.mode_config.get("display_modes", {})

@@ -840,7 +840,6 @@ class SportsRecent(SportsCore):
             
             # Process games and filter for final games, date range & favorite teams
             processed_games = []
-            favorite_games_found = 0
             for event in events:
                 game = self._extract_game_details(event)
                 # Filter criteria: must be final AND within recent date range
@@ -848,22 +847,13 @@ class SportsRecent(SportsCore):
                     game_time = game.get('start_time_utc')
                     if game_time and game_time >= recent_cutoff:
                         processed_games.append(game)
-                        # Count favorite team games for logging
-                        if (game['home_abbr'] in self.favorite_teams or 
-                            game['away_abbr'] in self.favorite_teams):
-                            favorite_games_found += 1
-                            
-                        # Special check for Tennessee game in recent games
-                        if (game['home_abbr'] == 'TENN' and game['away_abbr'] == 'UGA') or (game['home_abbr'] == 'UGA' and game['away_abbr'] == 'TENN'):
-                            self.logger.info(f"Found Tennessee game in recent: {game['away_abbr']} @ {game['home_abbr']} - {game.get('start_time_utc')} - Score: {game['away_score']}-{game['home_score']}")
-
             # Filter for favorite teams
             if self.favorite_teams:
                 # Get all games involving favorite teams
                 favorite_team_games = [game for game in processed_games
                                       if game['home_abbr'] in self.favorite_teams or
                                          game['away_abbr'] in self.favorite_teams]
-                self.logger.info(f"Found {favorite_games_found} favorite team games out of {len(processed_games)} total final games within last 21 days")
+                self.logger.info(f"Found {len(favorite_team_games)} favorite team games out of {len(processed_games)} total final games within last 21 days")
                 
                 # Select one game per favorite team (most recent game for each team)
                 team_games = []
