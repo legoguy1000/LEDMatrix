@@ -111,9 +111,9 @@ class BaseNFLManager(Football): # Renamed class
         self.background_fetch_requests[season_year] = request_id
         
         # For immediate response, try to get partial data
-        partial_data = self._get_partial_nfl_data(now.year)
+        partial_data = self._get_weeks_data("nfl")
         if partial_data:
-            return {'events': partial_data}
+            return partial_data
         
         return None
     
@@ -140,56 +140,12 @@ class BaseNFLManager(Football): # Renamed class
         except requests.exceptions.RequestException as e:
             self.logger.error(f"[NFL] API error fetching full schedule: {e}")
             return None
-    
-    def _get_partial_nfl_data(self, year: int) -> Optional[List]:
-        """
-        Get partial NFL data for immediate display while background fetch is in progress.
-        This fetches current/recent games only for quick response.
-        """
-        try:
-            # Fetch current week and next few days for immediate display
-            now = datetime.now(pytz.utc)
-            immediate_events = []
-            
-            start_date = now + timedelta(days=-1)
-            end_date = now + timedelta(days=7)
-            date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
-            
-            response = self.session.get(ESPN_NFL_SCOREBOARD_URL, params={"dates": date_str},headers=self.headers, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            immediate_events = data.get('events', [])
-                
-            if immediate_events:
-                self.logger.info(f"[NFL] Using {len(immediate_events)} immediate events while background fetch completes")
-                return immediate_events
-                
-        except requests.exceptions.RequestException as e:
-            self.logger.warning(f"[NFL] Error fetching immediate games for {year}: {e}")
-        
-        return None
-
-    def _fetch_current_nfl_games(self) -> Optional[Dict]:
-        """Fetch only current NFL games for live updates (not entire season)."""
-        try:
-            # Fetch current week's games only
-            url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-            response = self.session.get(url, headers=self.headers, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            events = data.get('events', [])
-            
-            self.logger.info(f"[NFL Live] Fetched {len(events)} current games")
-            return {'events': events}
-        except requests.exceptions.RequestException as e:
-            self.logger.error(f"[NFL Live] API error fetching current games: {e}")
-            return None
 
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""
         if isinstance(self, NFLLiveManager):
             # Live games should fetch only current games, not entire season
-            return self._fetch_current_nfl_games()
+            return self._fetch_todays_games("nfl")
         else:
             # Recent and Upcoming managers should use cached season data
             return self._fetch_nfl_api_data(use_cache=True)

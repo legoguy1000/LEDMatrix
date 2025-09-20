@@ -1,11 +1,13 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from src.display_manager import DisplayManager
 from src.cache_manager import CacheManager
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 from PIL import Image, ImageDraw, ImageFont
 import time
+import pytz
 from src.base_classes.sports import SportsCore
+import requests
 
 class Football(SportsCore):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
@@ -14,6 +16,8 @@ class Football(SportsCore):
     def _fetch_odds(self, game: Dict, league: str) -> None:
         super()._fetch_odds(game, "football", league)
 
+    # def _fetch_odds(self, game: Dict) -> None:
+    #     pass
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN NCAA FB API response."""
@@ -123,6 +127,17 @@ class Football(SportsCore):
             # Log the problematic event structure if possible
             logging.error(f"Error extracting game details: {e} from event: {game_event.get('id')}", exc_info=True)
             return None
+
+    def _fetch_todays_games(self, league: str) -> Optional[Dict]:
+        """Fetch only today's games for live updates (not entire season)."""
+        return super()._fetch_todays_games("football", league)
+        
+    def _get_weeks_data(self, league: str) -> Optional[Dict]:
+        """
+        Get partial data for immediate display while background fetch is in progress.
+        This fetches current/recent games only for quick response.
+        """
+        return super()._get_weeks_data("football", league)
 
 class FootballLive(Football):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):

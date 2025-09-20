@@ -435,6 +435,51 @@ class SportsCore:
     # def display(self, force_clear=False):
     #     pass
 
+    def _fetch_todays_games(self, sport: str, league: str) -> Optional[Dict]:
+        """Fetch only today's games for live updates (not entire season)."""
+        try:
+            now = datetime.now()
+            formatted_date = now.strftime("%Y%m%d")
+            # Fetch todays games only
+            url = f"https://site.api.espn.com/apis/site/v2/{sport}/football/{league}/scoreboard"
+            response = self.session.get(url, params={"dates": formatted_date}, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            events = data.get('events', [])
+            
+            self.logger.info(f"Fetched {len(events)} todays games for {sport} - {league}")
+            return {'events': events}
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"API error fetching todays games for {sport} - {league}: {e}")
+            return None
+        
+    def _get_weeks_data(self, sport: str, league: str) -> Optional[Dict]:
+        """
+        Get partial data for immediate display while background fetch is in progress.
+        This fetches current/recent games only for quick response.
+        """
+        try:
+            # Fetch current week and next few days for immediate display
+            now = datetime.now(pytz.utc)
+            immediate_events = []
+            
+            start_date = now + timedelta(days=-1)
+            end_date = now + timedelta(days=7)
+            date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
+            url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
+            response = self.session.get(url, params={"dates": date_str},headers=self.headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            immediate_events = data.get('events', [])
+                
+            if immediate_events:
+                self.logger.info(f"Fetched {len(immediate_events)} events playing today")
+                return {'events': immediate_events}
+                
+        except requests.exceptions.RequestException as e:
+            self.logger.warning(f"Error fetching this weeks games for {sport} - {league} - {date_str}: {e}")
+        return None
+
 class SportsUpcoming(SportsCore):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
