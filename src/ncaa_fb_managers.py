@@ -183,7 +183,7 @@ class BaseNCAAFBManager(Football): # Renamed class
             return self._fetch_ncaa_fb_api_data(use_cache=True)
 
 
-    def _fetch_odds(self, game: Dict) -> None:
+    def _fetch_football_odds(self, game: Dict) -> None:
         super()._fetch_odds(game, "college-football")
 
 class NCAAFBLiveManager(BaseNCAAFBManager, FootballLive): # Renamed class

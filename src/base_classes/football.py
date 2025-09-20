@@ -13,11 +13,11 @@ class Football(SportsCore):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
 
+    def _fetch_football_odds(self, _: Dict) -> None:
+        pass
+
     def _fetch_odds(self, game: Dict, league: str) -> None:
         super()._fetch_odds(game, "football", league)
-
-    # def _fetch_odds(self, game: Dict) -> None:
-    #     pass
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN NCAA FB API response."""
@@ -231,11 +231,11 @@ class FootballLive(Football):
                             if self.mode_config.get("show_favorite_teams_only", False):
                                 if details["home_abbr"] in self.favorite_teams or details["away_abbr"] in self.favorite_teams:
                                     if self.show_odds:
-                                        self._fetch_odds(details)
+                                        self._fetch_football_odds(details)
                                     new_live_games.append(details)
                             else:
                                 if self.show_odds:
-                                    self._fetch_odds(details)
+                                    self._fetch_football_odds(details)
                                 new_live_games.append(details)
 
                     # Log changes or periodically
