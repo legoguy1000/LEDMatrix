@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional
 import os
 import time
 from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
 try:
     from .display_manager import DisplayManager
     from .cache_manager import CacheManager
@@ -249,13 +250,13 @@ class LeaderboardManager:
         # Draw text
         draw.text((x, y), text, font=font, fill=fill)
 
-    def _get_team_logo(self, team_abbr: str, logo_dir: str, league: str = None, team_name: str = None) -> Optional[Image.Image]:
+    def _get_team_logo(self, league: str, team_id: str, team_abbr: str, logo_dir: str) -> Optional[Image.Image]:
         """Get team logo from the configured directory, downloading if missing."""
         if not team_abbr or not logo_dir:
             logger.debug("Cannot get team logo with missing team_abbr or logo_dir")
             return None
         try:
-            logo_path = os.path.join(logo_dir, f"{team_abbr}.png")
+            logo_path = Path(logo_dir, f"{team_abbr}.png")
             logger.debug(f"Attempting to load logo from path: {logo_path}")
             if os.path.exists(logo_path):
                 logo = Image.open(logo_path)
@@ -267,7 +268,8 @@ class LeaderboardManager:
                 # Try to download the missing logo if we have league information
                 if league:
                     logger.info(f"Attempting to download missing logo for {team_abbr} in league {league}")
-                    success = download_missing_logo(team_abbr, league, team_name)
+                    #  league: str, team_id: str, team_abbreviation: str, logo_path: Path, logo_url: str | None = None, create_placeholder: bool = True
+                    success = download_missing_logo(league, team_id, team_abbr, logo_path, None)
                     if success:
                         # Try to load the downloaded logo
                         if os.path.exists(logo_path):
@@ -1003,8 +1005,7 @@ class LeaderboardManager:
                     self._draw_text_with_outline(draw, number_text, (team_x, number_y), self.fonts['xlarge'], fill=(255, 255, 0))
                     
                     # Draw team logo (95% of display height, centered vertically)
-                    team_logo = self._get_team_logo(team['abbreviation'], league_config['logo_dir'], 
-                                                   league=league_key, team_name=team.get('name'))
+                    team_logo = self._get_team_logo(league_key, team["id"], team['abbreviation'], league_config['logo_dir'])
                     if team_logo:
                         # Resize team logo to dynamic size (95% of display height)
                         team_logo = team_logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)

@@ -7,9 +7,9 @@ from datetime import datetime, timedelta, timezone
 import os
 from PIL import Image, ImageDraw, ImageFont
 import pytz
+from pathlib import Path
 from src.display_manager import DisplayManager
 from src.cache_manager import CacheManager
-from src.config_manager import ConfigManager
 from src.odds_manager import OddsManager
 from src.logo_downloader import download_missing_logo
 from src.background_data_service import get_background_service
@@ -315,28 +315,33 @@ class OddsTickerManager:
             logger.error(f"Error fetching team rankings: {e}")
             return {}
 
-    def _get_team_logo(self, team_abbr: str, logo_dir: str, league: str = None, team_name: str = None) -> Optional[Image.Image]:
+    def convert_image(self, logo_path: Path) -> Optional[Image.Image]:
+        if logo_path.exists():
+            logo = Image.open(logo_path)
+            # Convert palette images with transparency to RGBA to avoid PIL warnings
+            if logo.mode == 'P' and 'transparency' in logo.info:
+                logo = logo.convert('RGBA')
+            logger.debug(f"Successfully loaded logo {logo_path}")
+            return logo
+        return None
+
+    def _get_team_logo(self, league: str, team_id: str, team_abbr: str, logo_dir: str) -> Optional[Image.Image]:
         """Get team logo from the configured directory, downloading if missing."""
         if not team_abbr or not logo_dir:
             logger.debug("Cannot get team logo with missing team_abbr or logo_dir")
             return None
         try:
-            logo_path = os.path.join(logo_dir, f"{team_abbr}.png")
+            logo_path = Path(logo_dir, f"{team_abbr}.png")
             logger.debug(f"Attempting to load logo from path: {logo_path}")
-            if os.path.exists(logo_path):
-                logo = Image.open(logo_path)
-                # Convert palette images with transparency to RGBA to avoid PIL warnings
-                if logo.mode == 'P' and 'transparency' in logo.info:
-                    logo = logo.convert('RGBA')
-                logger.debug(f"Successfully loaded logo for {team_abbr} from {logo_path}")
-                return logo
+            if (image := self.convert_image(logo_path)):
+                return image
             else:
                 logger.warning(f"Logo not found at path: {logo_path}")
                 
                 # Try to download the missing logo if we have league information
                 if league:
                     logger.info(f"Attempting to download missing logo for {team_abbr} in league {league}")
-                    success = download_missing_logo(team_abbr, league, team_name)
+                    success = download_missing_logo(league, team_id, team_abbr, logo_path, None)
                     if success:
                         # Try to load the downloaded logo
                         if os.path.exists(logo_path):
@@ -511,6 +516,8 @@ class OddsTickerManager:
                                 competitors = event['competitions'][0]['competitors']
                                 home_team = next(c for c in competitors if c['homeAway'] == 'home')
                                 away_team = next(c for c in competitors if c['homeAway'] == 'away')
+                                home_id = home_team['team']['id']
+                                away_id = away_team['team']['id']
                                 home_abbr = home_team['team']['abbreviation']
                                 away_abbr = away_team['team']['abbreviation']
                                 home_name = home_team['team'].get('name', home_abbr)
@@ -632,6 +639,8 @@ class OddsTickerManager:
                                 
                                 game = {
                                     'id': game_id,
+                                    'home_id': home_id,
+                                    'away_id': away_id,
                                     'home_team': home_abbr,
                                     'away_team': away_abbr,
                                     'home_team_name': home_name,
@@ -1015,10 +1024,8 @@ class OddsTickerManager:
         datetime_font = self.fonts['medium'] # Use large font for date/time
 
         # Get team logos (with automatic download if missing)
-        home_logo = self._get_team_logo(game['home_team'], game['logo_dir'], 
-                                      league=game.get('league'), team_name=game.get('home_team_name'))
-        away_logo = self._get_team_logo(game['away_team'], game['logo_dir'], 
-                                      league=game.get('league'), team_name=game.get('away_team_name'))
+        home_logo = self._get_team_logo(game["league"], game['home_id'], game['home_team'], game['logo_dir'])
+        away_logo = self._get_team_logo(game["league"], game['away_id'], game['away_team'], game['logo_dir'])
         broadcast_logo = None
         
         # Enhanced broadcast logo debugging
@@ -1045,7 +1052,7 @@ class OddsTickerManager:
 
                 logger.info(f"Game {game.get('id')}: Final mapped logo name: '{logo_name}' from broadcast names: {broadcast_names}")
                 if logo_name:
-                    broadcast_logo = self._get_team_logo(logo_name, 'assets/broadcast_logos')
+                    broadcast_logo = self.convert_image(Path("assets/broadcast_logos",f"{logo_name}.png"))
                     if broadcast_logo:
                         logger.info(f"Game {game.get('id')}: Successfully loaded broadcast logo for '{logo_name}' - Size: {broadcast_logo.size}")
                     else:
