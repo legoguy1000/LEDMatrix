@@ -441,7 +441,7 @@ class SportsCore:
             now = datetime.now()
             formatted_date = now.strftime("%Y%m%d")
             # Fetch todays games only
-            url = f"https://site.api.espn.com/apis/site/v2/{sport}/football/{league}/scoreboard"
+            url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
             response = self.session.get(url, params={"dates": formatted_date}, headers=self.headers, timeout=10)
             response.raise_for_status()
             data = response.json()

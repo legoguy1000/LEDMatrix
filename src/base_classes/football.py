@@ -261,7 +261,6 @@ class FootballLive(Football):
 
                     # Update game list and current game
                     if new_live_games:
-                        self.logger.info(new_live_games)
                         # Check if the games themselves changed, not just scores/time
                         new_game_ids = {g['id'] for g in new_live_games}
                         current_game_ids = {g['id'] for g in self.live_games}
