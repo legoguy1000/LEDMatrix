@@ -10,6 +10,7 @@ from src.cache_manager import CacheManager # Keep CacheManager import
 import pytz
 from src.base_classes.sports import SportsRecent, SportsUpcoming
 from src.base_classes.football import Football, FootballLive
+from pathlib import Path
 # Constants
 ESPN_NCAAFB_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard" # Changed URL for NCAA FB
 
@@ -211,6 +212,7 @@ class NCAAFBLiveManager(BaseNCAAFBManager, FootballLive): # Renamed class
             # More detailed test game for NCAA FB
             self.current_game = {
                 "id": "testNCAAFB001",
+                "home_id": "343", "away_id": "567",
                 "home_abbr": "UGA", "away_abbr": "AUB", # NCAA Examples
                 "home_score": "28", "away_score": "21",
                 "period": 4, "period_text": "Q4", "clock": "01:15",
@@ -218,8 +220,8 @@ class NCAAFBLiveManager(BaseNCAAFBManager, FootballLive): # Renamed class
                 "possession": "UGA", # Placeholder ID for home team
                 "possession_indicator": "home", # Explicitly set for test
                 "home_timeouts": 1, "away_timeouts": 2,
-                "home_logo_path": os.path.join(self.logo_dir, "UGA.png"),
-                "away_logo_path": os.path.join(self.logo_dir, "AUB.png"),
+                "home_logo_path": Path(self.logo_dir, "UGA.png"),
+                "away_logo_path": Path(self.logo_dir, "AUB.png"),
                 "is_live": True, "is_final": False, "is_upcoming": False, "is_halftime": False,
                 "status_text": "Q4 01:15"
             }

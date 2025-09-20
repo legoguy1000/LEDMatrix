@@ -51,9 +51,10 @@ class LogoDownloader:
         'nba': 'assets/sports/nba_logos', 
         'mlb': 'assets/sports/mlb_logos',
         'nhl': 'assets/sports/nhl_logos',
+        # NCAA sports use same directory
         'ncaa_fb': 'assets/sports/ncaa_logos',
-        'ncaa_fb_all': 'assets/sports/ncaa_logos',  # FCS teams go in same directory
-        'fcs': 'assets/sports/ncaa_logos',  # FCS teams go in same directory
+        'ncaa_fb_all': 'assets/sports/ncaa_logos',
+        'fcs': 'assets/sports/ncaa_logos',
         'ncaam_basketball': 'assets/sports/ncaa_logos',
         'ncaa_baseball': 'assets/sports/ncaa_logos',
         'ncaam_hockey': 'assets/sports/ncaa_logos',
@@ -126,7 +127,7 @@ class LogoDownloader:
             logger.error(f"Failed to create logo directory {logo_dir}: {e}")
             return False
     
-    def download_logo(self, logo_url: str, filepath: Path, team_name: str) -> bool:
+    def download_logo(self, logo_url: str, filepath: Path, team_abbreviation: str) -> bool:
         """Download a single logo from URL and save to filepath."""
         try:
             response = self.session.get(logo_url, headers=self.headers, timeout=self.request_timeout)
@@ -135,7 +136,7 @@ class LogoDownloader:
             # Verify it's actually an image
             content_type = response.headers.get('content-type', '').lower()
             if not any(img_type in content_type for img_type in ['image/png', 'image/jpeg', 'image/jpg', 'image/gif']):
-                logger.warning(f"Downloaded content for {team_name} is not an image: {content_type}")
+                logger.warning(f"Downloaded content for {team_abbreviation} is not an image: {content_type}")
                 return False
             
             with open(filepath, 'wb') as f:
@@ -158,10 +159,10 @@ class LogoDownloader:
                     # Save the converted image
                     img.save(filepath, 'PNG')
                 
-                logger.info(f"Successfully downloaded and converted logo for {team_name} -> {filepath.name}")
+                logger.info(f"Successfully downloaded and converted logo for {team_abbreviation} -> {filepath.name}")
                 return True
             except Exception as e:
-                logger.error(f"Downloaded file for {team_name} is not a valid image or conversion failed: {e}")
+                logger.error(f"Downloaded file for {team_abbreviation} is not a valid image or conversion failed: {e}")
                 try:
                     os.remove(filepath)  # Remove invalid file
                 except:
@@ -169,10 +170,10 @@ class LogoDownloader:
                 return False
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to download logo for {team_name}: {e}")
+            logger.error(f"Failed to download logo for {team_abbreviation}: {e}")
             return False
         except Exception as e:
-            logger.error(f"Unexpected error downloading logo for {team_name}: {e}")
+            logger.error(f"Unexpected error downloading logo for {team_abbreviation}: {e}")
             return False
     
     def fetch_teams_data(self, league: str) -> Optional[Dict]:
@@ -196,6 +197,29 @@ class LogoDownloader:
             return None
         except json.JSONDecodeError as e:
             logger.error(f"Error parsing JSON response for {league}: {e}")
+            return None
+    
+    def fetch_single_team(self, league: str, team_id: str) -> Optional[Dict]:
+        """Fetch team data from ESPN API for a specific league."""
+        api_url = self.API_ENDPOINTS.get(league)
+        if not api_url:
+            logger.error(f"No API endpoint configured for league: {league}")
+            return None
+        
+        try:
+            logger.info(f"Fetching team data for team {team_id} in {league} from ESPN API...")
+            response = self.session.get(f"{api_url}/{team_id}", headers=self.headers, timeout=self.request_timeout)
+            response.raise_for_status()
+            data = response.json()
+            
+            logger.info(f"Successfully fetched team data for {team_id} in {league}")
+            return data
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching team data for {team_id} in {league}: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing JSON response for{team_id} in {league}: {e}")
             return None
     
     def extract_teams_from_data(self, data: Dict, league: str) -> List[Dict[str, str]]:
@@ -451,61 +475,19 @@ class LogoDownloader:
         logger.info(f"Comprehensive NCAA football logo download complete: {downloaded_count} downloaded, {failed_count} failed")
         return downloaded_count, failed_count
     
-    def download_missing_logo_for_team(self, team_abbreviation: str, league: str, team_name: str | None = None) -> bool:
+    def download_missing_logo_for_team(self, league: str, team_id: str, team_abbreviation: str, logo_path: Path) -> bool:
         """Download a specific team's logo if it's missing."""
-        logo_dir = self.get_logo_directory(league)
-        if not self.ensure_logo_directory(logo_dir):
-            return False
-        
-        filename = f"{self.normalize_abbreviation(team_abbreviation)}.png"
-        filepath = Path(logo_dir) / filename
-        
-        # Return True if logo already exists
-        if filepath.exists():
-            logger.debug(f"Logo already exists for {team_abbreviation}")
-            return True
         
         # Fetch team data to find the logo URL
-        data = self.fetch_teams_data(league)
+        data = self.fetch_single_team(league, team_id)
         if not data:
             return False
-        
-        teams = self.extract_teams_from_data(data, league)
-        
-        # Find the specific team with improved matching
-        target_team = None
-        normalized_search = self.normalize_abbreviation(team_abbreviation)
-        
-        # First try exact match
-        for team in teams:
-            if team['abbreviation'].upper() == team_abbreviation.upper():
-                target_team = team
-                break
-        
-        # If not found, try normalized match
-        if not target_team:
-            for team in teams:
-                normalized_team_abbr = self.normalize_abbreviation(team['abbreviation'])
-                if normalized_team_abbr == normalized_search:
-                    target_team = team
-                    break
-        
-        # If still not found, try partial matching for common variations
-        if not target_team:
-            search_variations = self._get_team_name_variations(team_abbreviation)
-            for team in teams:
-                team_variations = self._get_team_name_variations(team['abbreviation'])
-                if any(var in team_variations for var in search_variations):
-                    target_team = team
-                    logger.info(f"Found team {team_abbreviation} as {team['abbreviation']} ({team['display_name']})")
-                    break
-        
-        if not target_team:
-            logger.warning(f"Team {team_abbreviation} not found in {league} data")
+        try:
+            logo_url = data["team"]["logos"][0]["href"]
+        except KeyError:
             return False
-        
         # Download the logo
-        success = self.download_logo(target_team['logo_url'], filepath, target_team['display_name'])
+        success = self.download_logo(logo_url, logo_path, team_abbreviation)
         if success:
             time.sleep(0.1)  # Small delay
         return success
@@ -532,7 +514,7 @@ class LogoDownloader:
         logger.info(f"Overall logo download results: {total_downloaded} downloaded, {total_failed} failed")
         return results
     
-    def create_placeholder_logo(self, team_abbreviation: str, logo_dir: str, team_name: str | None = None) -> bool:
+    def create_placeholder_logo(self, team_abbreviation: str, logo_dir: str) -> bool:
         """Create a placeholder logo when real logo cannot be downloaded."""
         try:
             # Ensure the logo directory exists
@@ -643,7 +625,7 @@ def get_soccer_league_key(league_code: str) -> str:
 
 
 # Convenience function for easy integration
-def download_missing_logo(team_abbreviation: str, league: str, team_name: str | None = None, create_placeholder: bool = True) -> bool:
+def download_missing_logo(league: str, team_id: str, team_abbreviation: str, logo_path: Path, logo_url: str | None = None, create_placeholder: bool = True) -> bool:
     """
     Convenience function to download a missing team logo.
     
@@ -660,6 +642,7 @@ def download_missing_logo(team_abbreviation: str, league: str, team_name: str | 
     
     # Check if logo already exists
     logo_dir = downloader.get_logo_directory(league)
+    downloader.ensure_logo_directory(logo_dir)
     filename = f"{downloader.normalize_abbreviation(team_abbreviation)}.png"
     filepath = Path(logo_dir) / filename
     
@@ -668,18 +651,24 @@ def download_missing_logo(team_abbreviation: str, league: str, team_name: str | 
         return True
     
     # Try to download the real logo first
-    logger.info(f"Attempting to download logo for {team_abbreviation} ({team_name or 'Unknown'}) from {league}")
-    success = downloader.download_missing_logo_for_team(team_abbreviation, league, team_name)
+    logger.info(f"Attempting to download logo for {team_abbreviation}  from {league}")
+    if logo_url:
+        success = downloader.download_logo(logo_url, filepath, team_abbreviation)
+        if success:
+            time.sleep(0.1)  # Small delay
+        return success
+
+    success = downloader.download_missing_logo_for_team(league, team_id, team_abbreviation, logo_path)
     
     if not success and create_placeholder:
-        logger.info(f"Creating placeholder logo for {team_abbreviation} ({team_name or 'Unknown'})")
+        logger.info(f"Creating placeholder logo for {team_abbreviation}")
         # Create placeholder as fallback
-        success = downloader.create_placeholder_logo(team_abbreviation, logo_dir, team_name)
+        success = downloader.create_placeholder_logo(team_abbreviation, logo_dir)
     
     if success:
-        logger.info(f"Successfully handled logo for {team_abbreviation} ({team_name or 'Unknown'})")
+        logger.info(f"Successfully handled logo for {team_abbreviation}")
     else:
-        logger.warning(f"Failed to download or create logo for {team_abbreviation} ({team_name or 'Unknown'})")
+        logger.warning(f"Failed to download or create logo for {team_abbreviation}")
     
     return success
 

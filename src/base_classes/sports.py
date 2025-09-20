@@ -236,18 +236,18 @@ class SportsCore:
             draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
         draw.text((x, y), text, font=font, fill=fill)
 
-    def _load_and_resize_logo(self, team_id: str, team_abbrev: str, logo_path: Path, team_name: str) -> Optional[Image.Image]:
+    def _load_and_resize_logo(self, team_id: str, team_abbrev: str, logo_path: Path, logo_url: str | None ) -> Optional[Image.Image]:
         """Load and resize a team logo, with caching and automatic download if missing."""
 
         self.logger.debug(f"Logo path: {logo_path}")
 
         try:
             # Try to download missing logo first
-            if not os.path.exists(logo_path):
+            if not logo_path.exists():
                 self.logger.info(f"Logo not found for {team_abbrev} at {logo_path}. Attempting to download.")
                 
                 # Try to download the logo from ESPN API (this will create placeholder if download fails)
-                download_missing_logo(team_id, team_abbrev, logo_path, self.sport_key, team_name)
+                download_missing_logo(self.sport_key, team_id, team_abbrev, logo_path, logo_url)
 
             # Only try to open the logo if the file exists
             if os.path.exists(logo_path):
@@ -625,8 +625,8 @@ class SportsUpcoming(SportsCore):
             overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
             draw_overlay = ImageDraw.Draw(overlay)
 
-            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game["home_logo_url"])
-            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game["away_logo_url"])
+            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game.get("home_logo_url"))
+            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game.get("away_logo_url"))
 
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for game: {game.get('id')}") # Changed log prefix
@@ -827,11 +827,12 @@ class SportsRecent(SportsCore):
             data = self._fetch_data() # Uses shared cache
             if not data or 'events' not in data:
                 self.logger.warning("No events found in shared data.") # Changed log prefix
-                if not self.games_list: self.current_game = None # Clear display if no games were showing
+                if not self.games_list: 
+                    self.current_game = None # Clear display if no games were showing
                 return
 
             events = data['events']
-            # self.logger.info(f"Processing {len(events)} events from shared data.") # Changed log prefix
+            self.logger.info(f"Processing {len(events)} events from shared data.") # Changed log prefix
 
             # Define date range for "recent" games (last 21 days to capture games from 3 weeks ago)
             now = datetime.now(timezone.utc)
@@ -923,8 +924,8 @@ class SportsRecent(SportsCore):
             overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
             draw_overlay = ImageDraw.Draw(overlay)
 
-            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game["home_logo_url"])
-            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game["away_logo_url"])
+            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game.get("home_logo_url"))
+            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game.get("away_logo_url"))
 
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for game: {game.get('id')}") # Changed log prefix

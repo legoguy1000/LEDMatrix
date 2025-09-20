@@ -308,8 +308,8 @@ class FootballLive(Football):
             overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
             draw_overlay = ImageDraw.Draw(overlay) # Draw text elements on overlay first
 
-            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game["home_logo_url"])
-            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game["away_logo_url"])
+            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game.get("home_logo_url"))
+            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game.get("away_logo_url"))
 
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for live game: {game.get('id')}") # Changed log prefix

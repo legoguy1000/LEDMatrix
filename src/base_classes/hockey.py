@@ -40,8 +40,10 @@ class Hockey(SportsCore):
                  elif period == 3: period_text = "P3" # Fixed: period 3 is 3rd quarter, not halftime
                  elif period > 3: period_text = f"OT {period - 3}" # OT starts after P3
             elif status["type"]["state"] == "post":
-                 if period > 3 : period_text = "Final/OT"
-                 else: period_text = "Final"
+                 if period > 3 : 
+                     period_text = "Final/OT"
+                 else: 
+                     period_text = "Final"
             elif status["type"]["state"] == "pre":
                 period_text = details.get("game_time", "") # Show time for upcoming
 
@@ -186,9 +188,8 @@ class HockeyLive(Hockey):
             main_img = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 255))
             overlay = Image.new('RGBA', (self.display_width, self.display_height), (0, 0, 0, 0))
             draw_overlay = ImageDraw.Draw(overlay) # Draw text elements on overlay first
-
-            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game["home_logo_url"])
-            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game["away_logo_url"])
+            home_logo = self._load_and_resize_logo(game["home_id"], game["home_abbr"], game["home_logo_path"], game.get("home_logo_url"))
+            away_logo = self._load_and_resize_logo(game["away_id"], game["away_abbr"], game["away_logo_path"], game.get("away_logo_url"))
 
             if not home_logo or not away_logo:
                 self.logger.error(f"Failed to load logos for live game: {game.get('id')}") # Changed log prefix
@@ -230,90 +231,6 @@ class HockeyLive(Hockey):
             status_x = (self.display_width - status_width) // 2
             status_y = 1 # Position at top
             self._draw_text_with_outline(draw_overlay, period_clock_text, (status_x, status_y), self.fonts['time'])
-
-            # Down & Distance or Scoring Event (Below Period/Clock)
-            scoring_event = game.get("scoring_event", "")
-            down_distance = game.get("down_distance_text", "")
-            
-            # Show scoring event if detected, otherwise show down & distance
-            if scoring_event and game.get("is_live"):
-                # Display scoring event with special formatting
-                event_width = draw_overlay.textlength(scoring_event, font=self.fonts['detail'])
-                event_x = (self.display_width - event_width) // 2
-                event_y = (self.display_height) - 7
-                
-                # Color coding for different scoring events
-                if scoring_event == "TOUCHDOWN":
-                    event_color = (255, 215, 0)  # Gold
-                elif scoring_event == "FIELD GOAL":
-                    event_color = (0, 255, 0)    # Green
-                elif scoring_event == "PAT":
-                    event_color = (255, 165, 0)  # Orange
-                else:
-                    event_color = (255, 255, 255)  # White
-                
-                self._draw_text_with_outline(draw_overlay, scoring_event, (event_x, event_y), self.fonts['detail'], fill=event_color)
-            elif down_distance and game.get("is_live"): # Only show if live and available
-                dd_width = draw_overlay.textlength(down_distance, font=self.fonts['detail'])
-                dd_x = (self.display_width - dd_width) // 2
-                dd_y = (self.display_height)- 7 # Top of D&D text
-                self._draw_text_with_outline(draw_overlay, down_distance, (dd_x, dd_y), self.fonts['detail'], fill=(200, 200, 0)) # Yellowish text
-
-                # Possession Indicator (small football icon)
-                possession = game.get("possession_indicator")
-                if possession: # Only draw if possession is known
-                    ball_radius_x = 3  # Wider for football shape
-                    ball_radius_y = 2  # Shorter for football shape
-                    ball_color = (139, 69, 19) # Brown color for the football
-                    lace_color = (255, 255, 255) # White for laces
-
-                    # Approximate height of the detail font (4x6 font at size 6 is roughly 6px tall)
-                    detail_font_height_approx = 6
-                    ball_y_center = dd_y + (detail_font_height_approx // 2) # Center ball vertically with D&D text
-
-                    possession_ball_padding = 3 # Pixels between D&D text and ball
-
-                    if possession == "away":
-                        # Position ball to the left of D&D text
-                        ball_x_center = dd_x - possession_ball_padding - ball_radius_x
-                    elif possession == "home":
-                        # Position ball to the right of D&D text
-                        ball_x_center = dd_x + dd_width + possession_ball_padding + ball_radius_x
-                    else:
-                        ball_x_center = 0 # Should not happen / no indicator
-
-                    if ball_x_center > 0: # Draw if position is valid
-                        # Draw the football shape (ellipse)
-                        draw_overlay.ellipse(
-                            (ball_x_center - ball_radius_x, ball_y_center - ball_radius_y,  # x0, y0
-                             ball_x_center + ball_radius_x, ball_y_center + ball_radius_y), # x1, y1
-                            fill=ball_color, outline=(0,0,0)
-                        )
-                        # Draw a simple horizontal lace
-                        draw_overlay.line(
-                            (ball_x_center - 1, ball_y_center, ball_x_center + 1, ball_y_center),
-                            fill=lace_color, width=1
-                        )
-
-            # Timeouts (Bottom corners) - 3 small bars per team
-            timeout_bar_width = 4
-            timeout_bar_height = 2
-            timeout_spacing = 1
-            timeout_y = self.display_height - timeout_bar_height - 1 # Bottom edge
-
-            # Away Timeouts (Bottom Left)
-            away_timeouts_remaining = game.get("away_timeouts", 0)
-            for i in range(3):
-                to_x = 2 + i * (timeout_bar_width + timeout_spacing)
-                color = (255, 255, 255) if i < away_timeouts_remaining else (80, 80, 80) # White if available, gray if used
-                draw_overlay.rectangle([to_x, timeout_y, to_x + timeout_bar_width, timeout_y + timeout_bar_height], fill=color, outline=(0,0,0))
-
-             # Home Timeouts (Bottom Right)
-            home_timeouts_remaining = game.get("home_timeouts", 0)
-            for i in range(3):
-                to_x = self.display_width - 2 - timeout_bar_width - (2-i) * (timeout_bar_width + timeout_spacing)
-                color = (255, 255, 255) if i < home_timeouts_remaining else (80, 80, 80) # White if available, gray if used
-                draw_overlay.rectangle([to_x, timeout_y, to_x + timeout_bar_width, timeout_y + timeout_bar_height], fill=color, outline=(0,0,0))
 
             # Draw odds if available
             if 'odds' in game and game['odds']:
@@ -408,4 +325,4 @@ class HockeyLive(Hockey):
             self.display_manager.update_display() # Update display here for live
 
         except Exception as e:
-            self.logger.error(f"Error displaying live Football game: {e}", exc_info=True) # Changed log prefix
+            self.logger.error(f"Error displaying live Hockey game: {e}", exc_info=True) # Changed log prefix

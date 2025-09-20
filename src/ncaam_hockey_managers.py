@@ -15,7 +15,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from src.base_classes.sports import SportsRecent, SportsUpcoming
 from src.base_classes.hockey import Hockey, HockeyLive
-
+from pathlib import Path
 # Constants
 ESPN_NCAAMH_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/hockey/mens-college-hockey/scoreboard"
 
@@ -156,24 +156,28 @@ class NCAAMHockeyLiveManager(BaseNCAAMHockeyManager, HockeyLive): # Renamed clas
     """Manager for live NCAA Mens Hockey games."""
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger('NCAA Mens Hockey Live') # Changed logger name
+        self.logger = logging.getLogger('NCAAMHockeyLiveManager') # Changed logger name
 
         # Initialize with test game only if test mode is enabled
         if self.test_mode:
             self.current_game = {
+                "id": "401596361",
                 "home_abbr": "RIT",
-                "away_abbr": "PU",
+                "away_abbr": "CLAR ",
                 "home_score": "3",
                 "away_score": "2",
                 "period": 2,
+                "period_text": "1st",
+                "home_id": "178",
+                "away_id": "2137",
                 "clock": "12:34",
-                "home_logo_path": os.path.join(self.logo_dir, "RIT.png"),
-                "away_logo_path": os.path.join(self.logo_dir, "PU.png"),
+                "home_logo_path": Path(self.logo_dir, "RIT.png"),
+                "away_logo_path": Path(self.logo_dir, "CLAR .png"),
                 "game_time": "7:30 PM",
                 "game_date": "Apr 17"
             }
             self.live_games = [self.current_game]
-            self.logger.info("Initialized NCAAMHockeyLiveManager with test game: RIT vs PU")
+            self.logger.info("Initialized NCAAMHockeyLiveManager with test game: RIT vs CLAR ")
         else:
             self.logger.info("Initialized NCAAMHockeyLiveManager in live mode")
 
@@ -181,13 +185,13 @@ class NCAAMHockeyRecentManager(BaseNCAAMHockeyManager, SportsRecent):
     """Manager for recently completed NCAAMH games."""
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger('NFL Recent') # Changed logger name
+        self.logger = logging.getLogger('NCAAMHockeyRecentManager') # Changed logger name
         self.logger.info(f"Initialized NCAAMHRecentManager with {len(self.favorite_teams)} favorite teams")
 
 class NCAAMHockeyUpcomingManager(BaseNCAAMHockeyManager, SportsUpcoming):
     """Manager for upcoming NCAA Mens Hockey games."""
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger('NFL Upcoming') # Changed logger name
+        self.logger = logging.getLogger('NCAAMHockeyUpcomingManager') # Changed logger name
         self.logger.info(f"Initialized NCAAMHUpcomingManager with {len(self.favorite_teams)} favorite teams")
         
