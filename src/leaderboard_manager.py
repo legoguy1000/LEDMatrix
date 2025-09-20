@@ -440,6 +440,7 @@ class LeaderboardManager:
             for team_data in teams:
                 team_info = team_data.get('team', {})
                 team_name = team_info.get('name', 'Unknown')
+                team_id = team_info.get('id')
                 team_abbr = team_info.get('abbreviation', 'Unknown')
                 current_rank = team_data.get('current', 0)
                 record_summary = team_data.get('recordSummary', '0-0')
@@ -469,6 +470,7 @@ class LeaderboardManager:
                 
                 standings.append({
                     'name': team_name,
+                    'id': team_id,
                     'abbreviation': team_abbr,
                     'rank': current_rank,
                     'wins': wins,
@@ -544,6 +546,7 @@ class LeaderboardManager:
             # Process each team in the ranking
             for team_data in teams:
                 team_info = team_data.get('team', {})
+                team_id = team_info.get('id')
                 team_name = team_info.get('name', 'Unknown')
                 team_abbr = team_info.get('abbreviation', 'Unknown')
                 current_rank = team_data.get('current', 0)
@@ -574,6 +577,7 @@ class LeaderboardManager:
                 
                 standings.append({
                     'name': team_name,
+                    'id': team_id,
                     'abbreviation': team_abbr,
                     'rank': current_rank,
                     'wins': wins,
@@ -649,6 +653,7 @@ class LeaderboardManager:
                     
                     team_name = team_data.get('displayName', 'Unknown')
                     team_abbr = team_data.get('abbreviation', 'Unknown')
+                    team_id = team_data.get('id')
                     
                     # Extract record from stats
                     wins = 0
@@ -688,6 +693,7 @@ class LeaderboardManager:
                     
                     standings.append({
                         'name': team_name,
+                        'id': team_id,
                         'abbreviation': team_abbr,
                         'wins': wins,
                         'losses': losses,
@@ -714,6 +720,7 @@ class LeaderboardManager:
                         
                         team_name = team_data.get('displayName', 'Unknown')
                         team_abbr = team_data.get('abbreviation', 'Unknown')
+                        team_id = team_data.get('id')
                         
                         # Extract record from stats
                         wins = 0
@@ -753,6 +760,7 @@ class LeaderboardManager:
                         
                         standings.append({
                             'name': team_name,
+                            'id': team_id,
                             'abbreviation': team_abbr,
                             'wins': wins,
                             'losses': losses,
@@ -943,7 +951,6 @@ class LeaderboardManager:
             draw = ImageDraw.Draw(self.leaderboard_image)
             
             current_x = 0
-            
             for league_idx, league_data in enumerate(self.leaderboard_data):
                 league_key = league_data['league']
                 league_config = league_data['league_config']
@@ -964,7 +971,6 @@ class LeaderboardManager:
                     
                     league_logo = league_logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
                     self.leaderboard_image.paste(league_logo, (logo_x, logo_y), league_logo if league_logo.mode == 'RGBA' else None)
-                    
                     # League name removed - only show league logo
                 else:
                     # No league logo available - skip league name display
