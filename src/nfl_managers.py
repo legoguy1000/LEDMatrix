@@ -160,15 +160,16 @@ class NFLLiveManager(BaseNFLManager, FootballLive): # Renamed class
             # More detailed test game for NFL
             self.current_game = {
                 "id": "test001",
-                "home_abbr": "TB", "away_abbr": "DAL",
+                "home_abbr": "TB", "home_id": "123", "away_abbr": "DAL", "away_id":"asdf",
                 "home_score": "21", "away_score": "17",
                 "period": 4, "period_text": "Q4", "clock": "02:35",
                 "down_distance_text": "1st & 10", 
                 "possession": "TB", # Placeholder ID for home team
                 "possession_indicator": "home", # Explicitly set for test
                 "home_timeouts": 2, "away_timeouts": 3,
-                "home_logo_path": os.path.join(self.logo_dir, "TB.png"),
-                "away_logo_path": os.path.join(self.logo_dir, "DAL.png"),
+                "home_logo_path": Path(self.logo_dir, "TB.png"),
+                "away_logo_path": Path(self.logo_dir, "DAL.png"),
+                "is_redzone": False,
                 "is_live": True, "is_final": False, "is_upcoming": False, "is_halftime": False,
                 "status_text": "Q4 02:35"
             }

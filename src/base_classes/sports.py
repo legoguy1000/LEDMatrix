@@ -269,15 +269,20 @@ class SportsCore:
             return None
         
     def _fetch_data(self) -> Optional[Dict]:
+        """Override this from the sports class"""
         pass
 
     def _get_partial_schedule_data(self, year: int) -> List[Dict]:
+        """Override this from the sports class"""
         return []
 
     def _fetch_immediate_games(self) -> List[Dict]:
+        """Override this from the sports class"""
         return []
 
-
+    def _fetch_game_odds(self, _: Dict) -> None:
+        """Override this from the sports class"""
+        pass
 
     def _fetch_odds(self, game: Dict, sport: str, league: str) -> None:
         """Fetch odds for a specific game if conditions are met."""
@@ -542,7 +547,7 @@ class SportsUpcoming(SportsCore):
                         game['away_abbr'] in self.favorite_teams):
                         favorite_games_found += 1
                     if self.show_odds:
-                        self._fetch_odds(game)
+                        self._fetch_game_odds(game)
 
             # Enhanced logging for debugging
             self.logger.info(f"Found {all_upcoming_games} total upcoming games in data")
