@@ -34,22 +34,20 @@ class Football(SportsCore):
             scoring_event = ""  # Track scoring events
             home_timeouts = 0
             away_timeouts = 0
-            
+            is_redzone = False
+            posession = None
+
             if situation and status["type"]["state"] == "in":
-                down = situation.get("down")
-                distance = situation.get("distance")
-                # Validate down and distance values before formatting
-                if (down is not None and isinstance(down, int) and 1 <= down <= 4 and 
-                    distance is not None and isinstance(distance, int) and distance >= 0):
-                    down_str = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}.get(down, f"{down}th")
-                    dist_str = f"& {distance}" if distance > 0 else "& Goal"
-                    down_distance_text = f"{down_str} {dist_str}"
-                elif situation.get("isRedZone"):
-                     down_distance_text = "Red Zone" # Simplified if down/distance not present but in redzone
+                # down = situation.get("down")
+                down_distance_text = situation.get("shortDownDistanceText")
+                # long_text = situation.get("downDistanceText")
+                # distance = situation.get("distance")
                 
                 # Detect scoring events from status detail
                 status_detail = status["type"].get("detail", "").lower()
                 status_short = status["type"].get("shortDetail", "").lower()
+                is_redzone = situation.get("isRedZone")
+                posession = situation.get("possession")
                 
                 # Check for scoring events in status text
                 if any(keyword in status_detail for keyword in ["touchdown", "td"]):
@@ -109,7 +107,8 @@ class Football(SportsCore):
                 "home_timeouts": home_timeouts,
                 "away_timeouts": away_timeouts,
                 "down_distance_text": down_distance_text, # Added Down/Distance
-                "possession": situation.get("possession") if situation else None, # ID of team with possession
+                "redzone": is_redzone,
+                "possession": posession, # ID of team with possession
                 "possession_indicator": possession_indicator, # Added for easy home/away check
                 "scoring_event": scoring_event, # Track scoring events (TOUCHDOWN, FIELD GOAL, PAT)
             })
@@ -391,7 +390,8 @@ class FootballLive(Football):
                 dd_width = draw_overlay.textlength(down_distance, font=self.fonts['detail'])
                 dd_x = (self.display_width - dd_width) // 2
                 dd_y = (self.display_height)- 7 # Top of D&D text
-                self._draw_text_with_outline(draw_overlay, down_distance, (dd_x, dd_y), self.fonts['detail'], fill=(200, 200, 0)) # Yellowish text
+                down_color = (200, 200, 0) if not game.get("is_redzone", False) else (255,0,0) # Yellowish text
+                self._draw_text_with_outline(draw_overlay, down_distance, (dd_x, dd_y), self.fonts['detail'], fill=down_color)
 
                 # Possession Indicator (small football icon)
                 possession = game.get("possession_indicator")
