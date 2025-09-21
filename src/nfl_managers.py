@@ -79,7 +79,7 @@ class BaseNFLManager(Football): # Renamed class
         def fetch_callback(result):
             """Callback when background fetch completes."""
             if result.success:
-                self.logger.info(f"Background fetch completed for {season_year}: {len(result.data.get("events"))} events")
+                self.logger.info(f"Background fetch completed for {season_year}: {len(result.data.get('events'))} events")
             else:
                 self.logger.error(f"Background fetch failed for {season_year}: {result.error}")
             
