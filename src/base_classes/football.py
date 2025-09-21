@@ -107,7 +107,7 @@ class Football(SportsCore):
                 "home_timeouts": home_timeouts,
                 "away_timeouts": away_timeouts,
                 "down_distance_text": down_distance_text, # Added Down/Distance
-                "redzone": is_redzone,
+                "is_redzone": is_redzone,
                 "possession": posession, # ID of team with possession
                 "possession_indicator": possession_indicator, # Added for easy home/away check
                 "scoring_event": scoring_event, # Track scoring events (TOUCHDOWN, FIELD GOAL, PAT)
