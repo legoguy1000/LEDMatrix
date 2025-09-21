@@ -37,8 +37,6 @@ class SportsCore:
             "update_interval_seconds", 60)
         self.show_records = self.mode_config.get('show_records', False)
         self.show_ranking = self.mode_config.get('show_ranking', False)
-        self.season_cache_duration = self.mode_config.get(
-            "season_cache_duration_seconds", 86400)  # 24 hours default
         # Number of games to show (instead of time-based windows)
         self.recent_games_to_show = self.mode_config.get(
             "recent_games_to_show", 5)  # Show last 5 games
@@ -447,7 +445,7 @@ class SportsCore:
             formatted_date = now.strftime("%Y%m%d")
             # Fetch todays games only
             url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
-            response = self.session.get(url, params={"dates": formatted_date}, headers=self.headers, timeout=10)
+            response = self.session.get(url, params={"dates": formatted_date, "limit": 1000}, headers=self.headers, timeout=10)
             response.raise_for_status()
             data = response.json()
             events = data.get('events', [])
@@ -468,17 +466,17 @@ class SportsCore:
             now = datetime.now(pytz.utc)
             immediate_events = []
             
-            start_date = now + timedelta(days=-1)
-            end_date = now + timedelta(days=7)
+            start_date = now + timedelta(weeks=-2)
+            end_date = now + timedelta(weeks=1)
             date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
             url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
-            response = self.session.get(url, params={"dates": date_str},headers=self.headers, timeout=10)
+            response = self.session.get(url, params={"dates": date_str, "limit": 1000},headers=self.headers, timeout=10)
             response.raise_for_status()
             data = response.json()
             immediate_events = data.get('events', [])
                 
             if immediate_events:
-                self.logger.info(f"Fetched {len(immediate_events)} events playing today")
+                self.logger.info(f"Fetched {len(immediate_events)} events {date_str}")
                 return {'events': immediate_events}
                 
         except requests.exceptions.RequestException as e:

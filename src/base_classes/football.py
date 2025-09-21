@@ -292,7 +292,7 @@ class FootballLive(Football):
                     else:
                         # No live games found
                         if self.live_games: # Were there games before?
-                             self.logger.info("Live games previously showing have ended or are no longer live.") # Changed log prefix
+                            self.logger.info("Live games previously showing have ended or are no longer live.") # Changed log prefix
                         self.live_games = []
                         self.current_game = None
                         self.current_game_index = 0

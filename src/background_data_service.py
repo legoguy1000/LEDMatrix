@@ -27,7 +27,7 @@ import json
 import queue
 from concurrent.futures import ThreadPoolExecutor, Future
 import weakref
-
+from src.cache_manager import CacheManager
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class BackgroundDataService:
     with intelligent caching, retry logic, and progress tracking.
     """
     
-    def __init__(self, cache_manager, max_workers: int = 3, request_timeout: int = 30):
+    def __init__(self, cache_manager: CacheManager, max_workers: int = 3, request_timeout: int = 30):
         """
         Initialize the background data service.
         

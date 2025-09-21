@@ -97,10 +97,20 @@ class BaseNCAAFBManager(Football): # Renamed class
         cache_key = f"ncaafb_schedule_{season_year}"
 
         if use_cache:
-            cached_data = self.cache_manager.get(cache_key, max_age=self.season_cache_duration)
+            cached_data = self.cache_manager.get(cache_key)
             if cached_data:
-                self.logger.info(f"Using cached schedule for {season_year}")
-                return {'events': cached_data}
+                # Validate cached data structure
+                if isinstance(cached_data, dict) and 'events' in cached_data:
+                    self.logger.info(f"Using cached schedule for {season_year}")
+                    return cached_data
+                elif isinstance(cached_data, list):
+                    # Handle old cache format (list of events)
+                    self.logger.info(f"Using cached schedule for {season_year} (legacy format)")
+                    return {'events': cached_data}
+                else:
+                    self.logger.warning(f"Invalid cached data format for {season_year}: {type(cached_data)}")
+                    # Clear invalid cache
+                    self.cache_manager.clear_cache(cache_key)
         
         # If background service is disabled, fall back to synchronous fetch
         if not self.background_enabled or not self.background_service:
@@ -225,5 +235,5 @@ class NCAAFBUpcomingManager(BaseNCAAFBManager, SportsUpcoming): # Renamed class
     """Manager for upcoming NCAA FB games.""" # Updated docstring
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager):
         super().__init__(config, display_manager, cache_manager)
-        self.logger = logging.getLogger('NCAAFBRecentManager') # Changed logger name
+        self.logger = logging.getLogger('NCAAFBUpcomingManager') # Changed logger name
         self.logger.info(f"Initialized NCAAFBUpcomingManager with {len(self.favorite_teams)} favorite teams") # Changed log prefix

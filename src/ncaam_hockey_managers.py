@@ -119,7 +119,7 @@ class BaseNCAAMHockeyManager(Hockey): # Renamed class
         for year in years_to_check:
             cache_key = f"ncaamh_schedule_{year}"
             if use_cache:
-                cached_data = self.cache_manager.get(cache_key, max_age=self.season_cache_duration)
+                cached_data = self.cache_manager.get(cache_key)
                 if cached_data:
                     self.logger.info(f"[NCAAMH] Using cached schedule for {year}")
                     all_events.extend(cached_data)

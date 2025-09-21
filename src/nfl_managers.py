@@ -67,7 +67,7 @@ class BaseNFLManager(Football): # Renamed class
                 else:
                     self.logger.warning(f"[NFL] Invalid cached data format for {season_year}: {type(cached_data)}")
                     # Clear invalid cache
-                    self.cache_manager.delete(cache_key)
+                    self.cache_manager.clear_cache(cache_key)
         
         # If background service is disabled, fall back to synchronous fetch
         if not self.background_enabled or not self.background_service:
@@ -79,9 +79,9 @@ class BaseNFLManager(Football): # Renamed class
         def fetch_callback(result):
             """Callback when background fetch completes."""
             if result.success:
-                self.logger.info(f"[NFL] Background fetch completed for {season_year}: {len(result.data)} events")
+                self.logger.info(f"Background fetch completed for {season_year}: {len(result.data)} events")
             else:
-                self.logger.error(f"[NFL] Background fetch failed for {season_year}: {result.error}")
+                self.logger.error(f"Background fetch failed for {season_year}: {result.error}")
             
             # Clean up request tracking
             if season_year in self.background_fetch_requests:
