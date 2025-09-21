@@ -570,7 +570,6 @@ class DisplayController:
     def _update_modules(self):
         """Call update methods on active managers."""
         # Check if we're currently scrolling and defer updates if so
-        logger.info("Running Module Update")
         if self.display_manager.is_currently_scrolling():
             logger.debug("Display is currently scrolling, deferring module updates")
             # Defer updates for modules that might cause lag during scrolling
