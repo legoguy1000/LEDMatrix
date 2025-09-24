@@ -163,13 +163,30 @@ class BaseNHLManager:
             return None
 
     def _fetch_data(self, date_str: str = None) -> Optional[Dict]:
-        """Fetch data using the new centralized method."""
-        # For live games, bypass the shared cache to ensure fresh data
+        """
+        Fetch data using background service cache first, fallback to direct API call.
+        This eliminates redundant caching and ensures Recent/Upcoming managers
+        use the same data source as the background service.
+        """
+        # For Live managers, always fetch fresh data
         if isinstance(self, NHLLiveManager):
             return self._fetch_nhl_api_data(use_cache=False)
-        else:
-            # For non-live games, use the shared cache
-            return self._fetch_nhl_api_data(use_cache=True)
+        
+        # For Recent/Upcoming managers, try to use background service cache first
+        from datetime import datetime
+        import pytz
+        cache_key = f"nhl_{datetime.now(pytz.utc).strftime('%Y%m%d')}"
+        
+        # Check if background service has fresh data
+        if self.cache_manager.is_background_data_available(cache_key, 'nhl'):
+            cached_data = self.cache_manager.get_background_cached_data(cache_key, 'nhl')
+            if cached_data:
+                self.logger.info(f"[NHL] Using background service cache for {cache_key}")
+                return cached_data
+        
+        # Fallback to direct API call if background data not available
+        self.logger.info(f"[NHL] Background data not available, fetching directly for {cache_key}")
+        return self._fetch_nhl_api_data(use_cache=True)
 
     def _load_fonts(self):
         """Load fonts used by the scoreboard."""
@@ -680,7 +697,7 @@ class NHLRecentManager(BaseNHLManager):
         self.recent_games = []
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 300  # 5 minutes
+        self.update_interval = self.nhl_config.get("recent_update_interval", 3600)  # Use config, default 1 hour
         self.recent_games_to_show = self.nhl_config.get("recent_games_to_show", 5)  # Number of most recent games to display
         self.last_game_switch = 0
         self.game_display_duration = 15  # Display each game for 15 seconds
@@ -792,7 +809,7 @@ class NHLUpcomingManager(BaseNHLManager):
         self.upcoming_games = []
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 300  # 5 minutes
+        self.update_interval = self.nhl_config.get("recent_update_interval", 3600)  # Use config, default 1 hour
         self.upcoming_games_to_show = self.nhl_config.get("upcoming_games_to_show", 5)  # Number of upcoming games to display
         self.last_log_time = 0
         self.log_interval = 300  # Only log status every 5 minutes

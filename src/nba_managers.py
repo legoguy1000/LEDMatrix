@@ -12,6 +12,7 @@ from src.cache_manager import CacheManager
 from src.config_manager import ConfigManager
 from src.odds_manager import OddsManager
 from src.background_data_service import get_background_service
+from src.background_cache_mixin import BackgroundCacheMixin
 import pytz
 
 # Import the API counter function from web interface
@@ -32,7 +33,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-class BaseNBAManager:
+class BaseNBAManager(BackgroundCacheMixin):
     """Base class for NBA managers with common functionality."""
     # Class variables for warning tracking
     _no_data_warning_logged = False
@@ -317,11 +318,16 @@ class BaseNBAManager:
             return None
 
     def _fetch_data(self, date_str: str = None) -> Optional[Dict]:
-        """Fetch data using shared data mechanism."""
-        if isinstance(self, NBALiveManager):
-            return self._fetch_nba_api_data(use_cache=False)
-        else:
-            return self._fetch_nba_api_data(use_cache=True)
+        """
+        Fetch data using background service cache first, fallback to direct API call.
+        This eliminates redundant caching and ensures Recent/Upcoming managers
+        use the same data source as the background service.
+        """
+        return self._fetch_data_with_background_cache(
+            sport_key='nba',
+            api_fetch_method=self._fetch_nba_api_data,
+            live_manager_class=NBALiveManager
+        )
 
     def _fetch_odds(self, game: Dict) -> None:
         """Fetch odds for a specific game if conditions are met."""
@@ -748,7 +754,7 @@ class NBARecentManager(BaseNBAManager):
         self.recent_games = []
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 3600  # 1 hour for recent games
+        self.update_interval = self.nba_config.get("recent_update_interval", 3600)  # Use config, default 1 hour
         self.recent_games_to_show = self.nba_config.get("recent_games_to_show", 5)  # Number of most recent games to display
         self.last_game_switch = 0
         self.game_display_duration = 15  # Display each game for 15 seconds
@@ -842,7 +848,7 @@ class NBAUpcomingManager(BaseNBAManager):
         self.upcoming_games = []
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 3600  # 1 hour for upcoming games
+        self.update_interval = self.nba_config.get("upcoming_update_interval", 3600)  # Use config, default 1 hour
         self.upcoming_games_to_show = self.nba_config.get("upcoming_games_to_show", 5)  # Number of upcoming games to display
         self.last_game_switch = 0
         self.game_display_duration = 15  # Display each game for 15 seconds

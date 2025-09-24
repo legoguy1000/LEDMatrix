@@ -347,11 +347,30 @@ class BaseNCAAMBasketballManager:
             return None
 
     def _fetch_data(self, date_str: str = None) -> Optional[Dict]:
-        """Fetch data using shared data mechanism."""
+        """
+        Fetch data using background service cache first, fallback to direct API call.
+        This eliminates redundant caching and ensures Recent/Upcoming managers
+        use the same data source as the background service.
+        """
+        # For Live managers, always fetch fresh data
         if isinstance(self, NCAAMBasketballLiveManager):
             return self._fetch_ncaam_basketball_api_data(use_cache=False)
-        else:
-            return self._fetch_ncaam_basketball_api_data(use_cache=True)
+        
+        # For Recent/Upcoming managers, try to use background service cache first
+        from datetime import datetime
+        import pytz
+        cache_key = f"ncaam_basketball_{datetime.now(pytz.utc).strftime('%Y%m%d')}"
+        
+        # Check if background service has fresh data
+        if self.cache_manager.is_background_data_available(cache_key, 'ncaam_basketball'):
+            cached_data = self.cache_manager.get_background_cached_data(cache_key, 'ncaam_basketball')
+            if cached_data:
+                self.logger.info(f"[NCAAMBasketball] Using background service cache for {cache_key}")
+                return cached_data
+        
+        # Fallback to direct API call if background data not available
+        self.logger.info(f"[NCAAMBasketball] Background data not available, fetching directly for {cache_key}")
+        return self._fetch_ncaam_basketball_api_data(use_cache=True)
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN API response."""
@@ -788,7 +807,7 @@ class NCAAMBasketballRecentManager(BaseNCAAMBasketballManager):
         self.recent_games = []
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 3600  # 1 hour for recent games
+        self.update_interval = self.ncaam_basketball_config.get("recent_update_interval", 3600)  # Use config, default 1 hour
         self.recent_games_to_show = self.ncaam_basketball_config.get("recent_games_to_show", 5)  # Number of most recent games to display
         self.last_game_switch = 0
         self.game_display_duration = self.ncaam_basketball_config.get("recent_game_duration", 15) # Configurable duration
@@ -939,7 +958,7 @@ class NCAAMBasketballUpcomingManager(BaseNCAAMBasketballManager):
         self.upcoming_games = []
         self.current_game_index = 0
         self.last_update = 0
-        self.update_interval = 3600  # 1 hour for upcoming games
+        self.update_interval = self.ncaam_basketball_config.get("upcoming_update_interval", 3600)  # Use config, default 1 hour
         self.upcoming_games_to_show = self.ncaam_basketball_config.get("upcoming_games_to_show", 5)  # Number of upcoming games to display
         self.last_warning_time = 0
         self.warning_cooldown = 300  # Only show warning every 5 minutes
