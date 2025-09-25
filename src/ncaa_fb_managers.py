@@ -140,7 +140,7 @@ class BaseNCAAFBManager(Football): # Renamed class
         
         # Submit background fetch request
         request_id = self.background_service.submit_fetch_request(
-            sport="nfl",
+            sport="ncaafb",
             year=season_year,
             url=ESPN_NCAAFB_SCOREBOARD_URL,
             cache_key=cache_key,
@@ -163,7 +163,7 @@ class BaseNCAAFBManager(Football): # Renamed class
     
     def _fetch_ncaa_api_data_sync(self, use_cache: bool = True) -> Optional[Dict]:
         """
-        Synchronous fallback for fetching NFL data when background service is disabled.
+        Synchronous fallback for fetching ncaafb data when background service is disabled.
         """
         now = datetime.now(pytz.utc)
         current_year = now.year
@@ -193,7 +193,7 @@ class BaseNCAAFBManager(Football): # Renamed class
             return self._fetch_ncaa_fb_api_data(use_cache=True)
 
 
-    def _fetch_football_odds(self, game: Dict) -> None:
+    def _fetch_game_odds(self, game: Dict) -> None:
         super()._fetch_odds(game, "college-football")
 
 class NCAAFBLiveManager(BaseNCAAFBManager, FootballLive): # Renamed class

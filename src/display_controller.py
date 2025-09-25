@@ -133,8 +133,8 @@ class DisplayController:
 
         # Initialize MLB managers if enabled
         mlb_time = time.time()
-        mlb_enabled = self.config.get('mlb', {}).get('enabled', False)
-        mlb_display_modes = self.config.get('mlb', {}).get('display_modes', {})
+        mlb_enabled = self.config.get('mlb_scoreboard', {}).get('enabled', False)
+        mlb_display_modes = self.config.get('mlb_scoreboard', {}).get('display_modes', {})
         
         if mlb_enabled:
             self.mlb_live = MLBLiveManager(self.config, self.display_manager, self.cache_manager) if mlb_display_modes.get('mlb_live', True) else None

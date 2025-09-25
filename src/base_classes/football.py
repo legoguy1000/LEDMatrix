@@ -237,9 +237,8 @@ class FootballLive(Football):
                                 new_live_games.append(details)
 
                     # Log changes or periodically
-                    current_time_for_log = time.time() # Use a consistent time for logging comparison
                     should_log = (
-                        current_time_for_log - self.last_log_time >= self.log_interval or
+                        current_time - self.last_log_time >= self.log_interval or
                         len(new_live_games) != len(self.live_games) or
                         any(g1['id'] != g2.get('id') for g1, g2 in zip(self.live_games, new_live_games)) or # Check if game IDs changed
                         (not self.live_games and new_live_games) # Log if games appeared
@@ -254,8 +253,7 @@ class FootballLive(Football):
                         else:
                             filter_text = "favorite teams" if self.mode_config.get("show_favorite_teams_only", False) else "criteria"
                             self.logger.info(f"No live/halftime games found for {filter_text}.")
-                        self.last_log_time = current_time_for_log
-
+                        self.last_log_time = current_time
 
                     # Update game list and current game
                     if new_live_games:
