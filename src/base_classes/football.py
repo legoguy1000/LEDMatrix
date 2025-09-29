@@ -7,19 +7,12 @@ from PIL import Image, ImageDraw, ImageFont
 import time
 import pytz
 from src.base_classes.sports import SportsCore
-from src.base_classes.api_extractors import ESPNFootballExtractor
-from src.base_classes.data_sources import ESPNDataSource
-import requests
 
 class Football(SportsCore):
     """Base class for football sports with common functionality."""
     
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        
-        # Initialize football-specific architecture components
-        self.api_extractor = ESPNFootballExtractor(logger)
-        self.data_source = ESPNDataSource(logger)
         self.sport = "football"
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
@@ -211,14 +204,10 @@ class FootballLive(Football):
                         if details and (details["is_live"] or details["is_halftime"]):
                             # If show_favorite_teams_only is true, only add if it's a favorite.
                             # Otherwise, add all games.
-                            if self.show_favorite_teams_only:
-                                if details["home_abbr"] in self.favorite_teams or details["away_abbr"] in self.favorite_teams:
-                                    new_live_games.append(details)
-                            else:
+                            if self.show_all_live or not self.show_favorite_teams_only or (self.show_favorite_teams_only and (details["home_abbr"] in self.favorite_teams or details["away_abbr"] in self.favorite_teams)):
+                                if self.show_odds:
+                                    self._fetch_odds(details)
                                 new_live_games.append(details)
-                    for game in new_live_games:
-                        if self.show_odds:
-                            self._fetch_odds(game)
                     # Log changes or periodically
                     current_time_for_log = time.time() # Use a consistent time for logging comparison
                     should_log = (
@@ -230,12 +219,12 @@ class FootballLive(Football):
 
                     if should_log:
                         if new_live_games:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only else "all teams"
+                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "all teams"
                             self.logger.info(f"Found {len(new_live_games)} live/halftime games for {filter_text}.")
                             for game_info in new_live_games: # Renamed game to game_info
                                 self.logger.info(f"  - {game_info['away_abbr']}@{game_info['home_abbr']} ({game_info.get('status_text', 'N/A')})")
                         else:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only else "criteria"
+                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "criteria"
                             self.logger.info(f"No live/halftime games found for {filter_text}.")
                         self.last_log_time = current_time_for_log
 

@@ -6,18 +6,12 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 import time
 from src.base_classes.sports import SportsCore
-from src.base_classes.api_extractors import ESPNHockeyExtractor
-from src.base_classes.data_sources import ESPNDataSource
 
 class Hockey(SportsCore):
     """Base class for hockey sports with common functionality."""
     
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        
-        # Initialize hockey-specific architecture components
-        self.api_extractor = ESPNHockeyExtractor(logger)
-        self.data_source = ESPNDataSource(logger)
         self.sport = "hockey"
 
 
@@ -136,15 +130,13 @@ class HockeyLive(Hockey):
                     new_live_games = []
                     for event in data["events"]:
                         details = self._extract_game_details(event)
-                        if details and details["is_live"]:
-                            self._fetch_odds(details)
-                            new_live_games.append(details)
-                    
-                    # Filter for favorite teams only if the config is set
-                    if self.show_favorite_teams_only:
-                        new_live_games = [game for game in new_live_games 
-                                         if game['home_abbr'] in self.favorite_teams or 
-                                            game['away_abbr'] in self.favorite_teams]
+                        if details and (details["is_live"] or details["is_halftime"]):
+                            # If show_favorite_teams_only is true, only add if it's a favorite.
+                            # Otherwise, add all games.
+                            if self.show_all_live or not self.show_favorite_teams_only or (self.show_favorite_teams_only and (details["home_abbr"] in self.favorite_teams or details["away_abbr"] in self.favorite_teams)):
+                                if self.show_odds:
+                                    self._fetch_odds(details)
+                                new_live_games.append(details)
                     
                     # Only log if there's a change in games or enough time has passed
                     should_log = (
@@ -155,13 +147,13 @@ class HockeyLive(Hockey):
                     
                     if should_log:
                         if new_live_games:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only else "all teams"
-                            self.logger.info(f"[NCAAMH] Found {len(new_live_games)} live games involving {filter_text}")
+                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "all teams"
+                            self.logger.info(f"Found {len(new_live_games)} live games involving {filter_text}")
                             for game in new_live_games:
-                                self.logger.info(f"[NCAAMH] Live game: {game['away_abbr']} vs {game['home_abbr']} - Period {game['period']}, {game['clock']}")
+                                self.logger.info(f"Live game: {game['away_abbr']} vs {game['home_abbr']} - Period {game['period']}, {game['clock']}")
                         else:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only else "criteria"
-                            self.logger.info(f"[NCAAMH] No live games found matching {filter_text}")
+                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "criteria"
+                            self.logger.info(f"No live games found matching {filter_text}")
                         self.last_log_time = current_time
                     
                     if new_live_games:

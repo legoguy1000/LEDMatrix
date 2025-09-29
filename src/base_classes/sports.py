@@ -41,20 +41,21 @@ class SportsCore:
         self.api_extractor: APIDataExtractor
         self.data_source: DataSource
         self.mode_config = config.get(f"{sport_key}_scoreboard", {})  # Changed config key
-        self.is_enabled = self.mode_config.get("enabled", False)
-        self.show_odds = self.mode_config.get("show_odds", False)
-        self.test_mode = self.mode_config.get("test_mode", False)
+        self.is_enabled: bool = self.mode_config.get("enabled", False)
+        self.show_odds: bool = self.mode_config.get("show_odds", False)
+        self.test_mode: bool = self.mode_config.get("test_mode", False)
         self.logo_dir = Path(self.mode_config.get("logo_dir", "assets/sports/ncaa_logos")) # Changed logo dir
-        self.update_interval = self.mode_config.get(
+        self.update_interval: int = self.mode_config.get(
             "update_interval_seconds", 60)
-        self.show_records = self.mode_config.get('show_records', False)
-        self.show_ranking = self.mode_config.get('show_ranking', False)
+        self.show_records: bool = self.mode_config.get('show_records', False)
+        self.show_ranking: bool = self.mode_config.get('show_ranking', False)
         # Number of games to show (instead of time-based windows)
-        self.recent_games_to_show = self.mode_config.get(
+        self.recent_games_to_show: int = self.mode_config.get(
             "recent_games_to_show", 5)  # Show last 5 games
-        self.upcoming_games_to_show = self.mode_config.get(
+        self.upcoming_games_to_show: int = self.mode_config.get(
             "upcoming_games_to_show", 10)  # Show next 10 games
-        self.show_favorite_teams_only = self.mode_config.get("show_favorite_teams_only", False)
+        self.show_favorite_teams_only: bool = self.mode_config.get("show_favorite_teams_only", False)
+        self.show_all_live: bool = self.mode_config.get("show_all_live", False)
 
         self.session = requests.Session()
         retry_strategy = Retry(
@@ -313,14 +314,6 @@ class SportsCore:
         try:
             if not self.show_odds:
                 return
-            
-            # Check if we should only fetch for favorite teams
-            if self.show_favorite_teams_only:
-                home_abbr = game.get('home_abbr')
-                away_abbr = game.get('away_abbr')
-                if not (home_abbr in self.favorite_teams or away_abbr in self.favorite_teams):
-                    self.logger.debug(f"Skipping odds fetch for non-favorite game in favorites-only mode: {away_abbr}@{home_abbr}")
-                    return
             
             # Determine update interval based on game state
             is_live = game.get('is_live', False)
