@@ -76,12 +76,12 @@ class Football(SportsCore):
             period = status.get("period", 0)
             period_text = ""
             if status["type"]["state"] == "in":
-                 if period == 0: period_text = "Start" # Before kickoff
-                 elif period == 1: period_text = "Q1"
-                 elif period == 2: period_text = "Q2"
-                 elif period == 3: period_text = "Q3" # Fixed: period 3 is 3rd quarter, not halftime
-                 elif period == 4: period_text = "Q4"
-                 elif period > 4: period_text = "OT" # OT starts after Q4
+                if period == 0:
+                    period_text = "Start" # Before kickoff
+                elif period >= 1 and period <= 4:
+                    period_text = f"Q{period}" # OT starts after Q4
+                elif period > 4:
+                    period_text = f"OT{period - 4}" # OT starts after Q4
             elif status["type"]["state"] == "halftime" or status["type"]["name"] == "STATUS_HALFTIME": # Check explicit halftime state
                 period_text = "HALF"
             elif status["type"]["state"] == "post":
