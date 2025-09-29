@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 import pytz
 from PIL import Image, ImageDraw
+from src.base_classes.data_sources import ESPNDataSource
 from src.base_classes.sports import SportsCore
 
 
@@ -33,6 +34,7 @@ class Baseball(SportsCore):
         self.show_bases = self.mode_config.get("show_bases", True)
         self.show_count = self.mode_config.get("show_count", True)
         self.show_pitcher_batter = self.mode_config.get("show_pitcher_batter", False)
+        self.data_source = ESPNDataSource(logger)
         self.sport = "baseball"
 
     def _get_baseball_display_text(self, game: Dict) -> str:

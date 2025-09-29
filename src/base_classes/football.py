@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import logging
 from PIL import Image, ImageDraw, ImageFont
 import time
-import pytz
+from src.base_classes.data_sources import ESPNDataSource
 from src.base_classes.sports import SportsCore
 
 class Football(SportsCore):
@@ -13,6 +13,7 @@ class Football(SportsCore):
     
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
+        self.data_source = ESPNDataSource(logger)
         self.sport = "football"
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:

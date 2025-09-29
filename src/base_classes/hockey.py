@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import logging
 from PIL import Image, ImageDraw, ImageFont
 import time
+from src.base_classes.data_sources import ESPNDataSource
 from src.base_classes.sports import SportsCore
 
 class Hockey(SportsCore):
@@ -12,6 +13,7 @@ class Hockey(SportsCore):
     
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
+        self.data_source = ESPNDataSource(logger)
         self.sport = "hockey"
 
 
