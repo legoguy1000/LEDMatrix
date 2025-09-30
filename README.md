@@ -25,6 +25,14 @@
 - Randomwire @ https://www.thingiverse.com/thing:5169867 for their 4mm Pixel Pitch LED Matrix Stand 
 
 
+
+
+-----------------------------------------------------------------------------------
+
+## Core Features
+
+<details>
+<summary>Core Features</summary>
 ## Core Features
 Modular, rotating Displays that can be individually enabled or disabled per the user's needs with some configuration around display durations, teams, stocks, weather, timezones, and more. Displays include:
 
@@ -94,26 +102,14 @@ The system supports live, recent, and upcoming game information for multiple spo
 ![DSC01376](https://github.com/user-attachments/assets/7ea5f42d-afce-422f-aa97-6b2a179aa7d2)
 
 - Font testing Display (not in rotation)
+</details>
 
-## System Architecture
+-----------------------------------------------------------------------------------
 
-The system is built with a modular architecture that allows for easy extension and maintenance:
-- `DisplayController`: Main orchestrator managing all display modes
-- Individual managers for each feature (sports, weather, music, etc.)
-- Separate authentication handlers for different services
-- Configurable display modes and rotation patterns from one file - config.json
+## Hardware
 
-## Configuration
-
-The system can be configured through a JSON configuration file that allows users to:
-- Enable/disable specific features
-- Set display durations
-- Configure API keys and endpoints
-- Customize display modes and rotation patterns
-- Set preferred music sources
-- Configure sports team preferences
-
-
+<details>
+<summary>Hardware Requirements</summary>
 ## Hardware Requirements
 - Raspberry Pi 3b or 4 (NOT RPI5!) : Amazon Affiliate Link: Raspberry Pi 4 4GB (https://amzn.to/4dJixuX)
 - RGB Matrix Bonnet / HAT
@@ -157,7 +153,19 @@ or
 
 
 
------------------------------------------------------------------------------------
+
+
+2 Matrix display with Rpi connected to Adafruit Single Chain HAT.
+![DSC00073](https://github.com/user-attachments/assets/a0e167ae-37c6-4db9-b9ce-a2b957ca1a67)
+
+
+</details>
+
+<details>
+
+<summary>Mount / Stand options</summary>
+
+
 ## Mount/Stand
 I 3D printed stands to keep the panels upright and snug. STL Files are included in the Repo but are also available at https://www.thingiverse.com/thing:5169867 Thanks to "Randomwire" for making these for the 4mm Pixel Pitch LED Matrix.
 
@@ -166,13 +174,16 @@ Special Thanks for Rmatze for making a 3mm Pixel Pitch RGB Matrix Connector: htt
 
 These are not required and you can probably rig up something basic with stuff you have around the house. I used these screws: https://amzn.to/4mFwNJp (Amazon Affiliate Link)
 
+</details>
 
 -----------------------------------------------------------------------------------
+## Installation Steps
 
-2 Matrix display with Rpi connected.
-![DSC00073](https://github.com/user-attachments/assets/a0e167ae-37c6-4db9-b9ce-a2b957ca1a67)
 
------------------------------------------------------------------------------------
+<details>
+
+<summary>Preparing the Raspberry Pi</summary>
+
 # Preparing the Raspberry Pi
 1. Create RPI Image on a Micro-SD card (I use 16gb because I have it, size is not too important but I would use 8gb or more) using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 2. Choose your Raspberry Pi (3B+ in my case) 
@@ -186,9 +197,13 @@ These are not required and you can probably rig up something basic with stuff yo
 7. Under the Services Tab, make sure that SSH is enabled. I recommend using password authentication for ease of use - it is the password you just chose above.
 ![image](https://github.com/user-attachments/assets/1d78d872-7bb1-466e-afb6-0ca26288673b)
 8. Then Click "Save" and Agree to Overwrite the Micro-SD card.
+</details>
 
 
------------------------------------------------------------------------------------
+
+<details>
+
+<summary>System Setup & Installation</summary>
 
 # System Setup & Installation
 
@@ -218,6 +233,12 @@ sudo ./first_time_install.sh
 ```
 
 This single script installs services, dependencies, configures permissions and sudoers, and validates the setup.
+
+</details>
+
+<details>
+
+<summary>Outdated Installation Steps left for reference</summary>
 
 
 -----------------------------------------------------------------------------------
@@ -296,7 +317,24 @@ sudo nano /boot/firmware/config.txt
 ```bash
 sudo reboot
 ```
------------------------------------------------------------------------------------
+## Configuration
+
+### Initial Setup
+
+1. **First-time setup**: (First Time Script should do this for you) Copy the template to create your config:
+   ```bash
+   cp config/config.template.json config/config.json
+   ```
+
+</details>
+
+
+
+## Configuration
+
+<details>
+
+<summary>Configuration</summary>
 
 ## Configuration
 
@@ -304,10 +342,7 @@ sudo reboot
 
 The system uses a template-based configuration approach to avoid Git conflicts during updates:
 
-1. **First-time setup**: (First Time Script should do this for you) Copy the template to create your config:
-   ```bash
-   cp config/config.template.json config/config.json
-   ```
+1. **First-time setup**: The previous "First_time_install.sh" script should've already copied the template to create your config.json:
 
 2. **Edit your configuration**: 
    ```bash
@@ -338,9 +373,13 @@ The system automatically handles configuration updates:
 
 Everything is configured via `config/config.json` and `config/config_secrets.json`. The `config.json` file is not tracked by Git to prevent conflicts during updates.
 
+</details>
 
 
------------------------------------------------------------------------------------
+<details>
+
+<summary>Calendar Display Configuration</summary>
+
 
 ## Calendar Display Configuration
 
@@ -376,6 +415,11 @@ The calendar display will show:
 - Event date and time
 - Event title (wrapped to fit the display)
 - Up to 3 upcoming events (configurable)
+</details>
+
+<details>
+
+<summary>Odds Ticker Configuration</summary>
 
 ## Odds Ticker Configuration
 
@@ -471,6 +515,12 @@ This will:
 2. Fetch upcoming games and odds
 3. Display sample games
 4. Test the scrolling functionality
+</details>
+
+
+<details>
+
+<summary>Stocks Configuration</summary>
 
 ## Stocks Configuration
 
@@ -573,6 +623,13 @@ This will:
 2. Verify configuration loading
 3. Test cache clearing behavior
 
+</details>
+
+<details>
+
+<summary>Football Configuration</summary>
+
+
 ## Football Game-Based Configuration (NFL & NCAA FB)
 
 For NFL and NCAA Football, the system now uses a game-based fetch approach instead of time-based windows. This is more practical for football since games are weekly and you want to show specific numbers of games rather than arbitrary time periods.
@@ -621,6 +678,13 @@ Instead of using `past_fetch_days` and `future_fetch_days`, the system now uses:
 - **During Season**: `fetch_future_games: 1` shows next week's game
 - **Off-Season**: `fetch_future_games: 1` shows the first scheduled game (even if it's months away)
 - **Planning**: `fetch_future_games: 2` shows the next two matchups for planning purposes
+
+</details>
+
+
+<details>
+
+<summary> Music Display Configuration </summary>
 
 ## Music Display Configuration
 
@@ -758,105 +822,9 @@ To get these credentials:
 *   Connection errors: Double-check the `YTM_COMPANION_URL` in `config.json` matches what YTMD's companion server is set to.
 *   Ensure your firewall (Windows Firewall) allows YTM Desktop app to access local networks.
 
------------------------------------------------------------------------------------
-### Favorite Team Filtering
-Across all sports displays (NFL, MLB, NBA, etc.), you can control which games are shown using the `"show_favorite_teams_only"` and `"favorite_teams"` settings in your `config/config.json`.
+</details>
 
-**How it Works:**
 
-*   **`"show_favorite_teams_only": true`**: When this is set to `true` within a specific sport's configuration (e.g., in the `"nfl_scoreboard"` block), the system will **only** fetch and display games (Live, Recent, and Upcoming) that involve one of the teams listed in your `"favorite_teams"` array for that sport. This is the best way to reduce API calls and keep the display focused.
-
-*   **`"show_favorite_teams_only": false`**: When set to `false` (or omitted), the system will display **all** available games for that sport, ignoring the `"favorite_teams"` list completely.
-
-**Example `config.json` for NFL:**
-```json
-"nfl_scoreboard": {
-    "enabled": true,
-    "show_odds": true,
-    "show_favorite_teams_only": true, // <-- Only shows games for DAL & TB
-    "favorite_teams": ["DAL", "TB"],
-    "fetch_past_games": 1,
-    "fetch_future_games": 1
-},
-```
-
-### Odds Ticker Feature
-The system includes a comprehensive odds ticker that displays betting odds for upcoming sports games. The ticker respects the `show_favorite_teams_only` setting from each individual sports module. For example, if `"show_favorite_teams_only": true` is set in the `nfl_scoreboard` config, the odds ticker will only show odds for your favorite NFL teams.
-
-**Features:**
-- **Multi-League Support**: NFL, NBA, MLB, NCAA Football
-- **Configurable Leagues**: Choose which leagues to display
-- **Favorite Teams Filter**: Obeys the `show_favorite_teams_only` setting in each sport's configuration block.
-- **Team Logos**: Displays team logos alongside odds information
-- **Comprehensive Odds**: Shows spreads, money lines, and over/under totals
-- **Scrolling Display**: Smooth scrolling text with team logos
-- **Time Display**: Shows game times in local timezone
-
-**Display Format:**
-```
-[12:00 PM] DAL -6.5 ML -200 O/U 47.5 vs NYG ML +175
-```
-
-**Configuration:**
-Add the following section to your `config/config.json`:
-```json
-{
-    "odds_ticker": {
-        "enabled": true,
-        "enabled_leagues": ["nfl", "nba", "mlb", "ncaa_fb"],
-        "update_interval": 3600,
-        "scroll_speed": 2,
-        "scroll_delay": 0.05,
-        "display_duration": 30
-    }
-}
-```
-
-**Testing:**
-You can test the odds ticker functionality using:
-```bash
-python test_odds_ticker.py
-```
-
-### Persistent Caching Setup
-
-The LEDMatrix system uses persistent caching to improve performance and reduce API calls. When running with `sudo`, the system needs a persistent cache directory that survives restarts.
-
-**First-Time Setup:**
-Run the setup script to create a persistent cache directory:
-```bash
-chmod +x setup_cache.sh
-./setup_cache.sh
-```
-
-This will:
-- Create `/var/cache/ledmatrix/` directory
-- Set proper ownership to your user account
-- Set permissions to allow the daemon user (which the system runs as) to write
-- Test writability for both your user and the daemon user
-
-**If You Still See Cache Warnings:**
-If you see warnings about using temporary cache directory, run the permissions fix:
-```bash
-chmod +x fix_cache_permissions.sh
-./fix_cache_permissions.sh
-```
-
-**Manual Setup:**
-If you prefer to set up manually:
-```bash
-sudo mkdir -p /var/cache/ledmatrix
-sudo chown $USER:$USER /var/cache/ledmatrix
-sudo chmod 777 /var/cache/ledmatrix
-```
-
-**Cache Locations (in order of preference):**
-1. `~/.ledmatrix_cache/` (user's home directory) - **Most persistent**
-2. `/var/cache/ledmatrix/` (system cache directory) - **Persistent across restarts**
-3. `/opt/ledmatrix/cache/` (alternative persistent location)
-4. `/tmp/ledmatrix_cache/` (temporary directory) - **NOT persistent**
-
-**Note:** If the system falls back to `/tmp/ledmatrix_cache/`, you'll see a warning message and the cache will not persist across restarts.
 ------------------------------------------------------------------------------------
 ## Before Running the Display
 - To allow the script to properly access fonts, you need to set the correct permissions on your home directory:
@@ -878,6 +846,10 @@ This will start the display cycle but only stays active as long as your ssh sess
 
 
 -----------------------------------------------------------------------------------
+
+<details>
+
+<summary>Run on Startup Automatically with Systemd Service Installation</summary>
 
 
 ## Run on Startup Automatically with Systemd Service Installation
@@ -925,6 +897,12 @@ sudo systemctl disable ledmatrix.service
 # Enable autostart
 sudo systemctl enable ledmatrix.service
 ```
+</details>
+
+<details>
+
+<summary>Convenience Scripts</summary>
+
 
 ### Convenience Scripts
 
@@ -943,7 +921,7 @@ Then use them to control the service:
 sudo ./start_display.sh
 sudo ./stop_display.sh
 ```
-
+</details>
 -----------------------------------------------------------------------------------
 
 ## Web Interface Installation (V2)
@@ -1043,34 +1021,13 @@ sudo systemctl enable ledmatrix-web.service
 
 -----------------------------------------------------------------------------------
 
-## Custom Fonts
-You can add any font to the assets/fonts/ folder but they need to be .ttf or .btf(less support) and updated in display_manager.py
 
+## Information
 
+<details>
 
------------------------------------------------------------------------------------
+<summary>Display Settings from RGBLEDMatrix Library</summary>
 
-
-### Running the display without Sudo (Not recommended but can be useful for troubleshooting or overcoming write errors)
-
-To run the display script without `sudo`, the user executing the script needs access to GPIO pins. Add the user to the `gpio` group:
-
-```bash
-sudo usermod -a -G gpio <your_username>
-# Example for user 'ledpi':
-# sudo usermod -a -G gpio ledpi
-```
-
-**Important:** You must **reboot** the Raspberry Pi after adding the user to the group for the change to take effect.
-
-You also need to disable hardware pulsing in the code (see `src/display_manager.py`, set `options.disable_hardware_pulsing = True`). This may result in a flickerying display
-
-If configured correctly, you can then run:
-
-```bash
-python3 display_controller.py
-```
------------------------------------------------------------------------------------
 
 ## Display Settings
 If you are copying my setup, you can likely leave this alone. 
@@ -1089,147 +1046,54 @@ If you are copying my setup, you can likely leave this alone.
 - Sports modules also support test_mode, live_update_interval, and favorite_teams.
 - Logos are loaded from the logo_dir path under assets/sports/...
 
+</details>
+
+
+<details>
+
+<summary>Cache Information</summary>
+
+
+### Persistent Caching Setup
+
+The LEDMatrix system uses persistent caching to improve performance and reduce API calls. When running with `sudo`, the system needs a persistent cache directory that survives restarts.
+
+**First-Time Setup:**
+Run the setup script to create a persistent cache directory:
 ```bash
-Example: NHL Configuration"nhl_scoreboard": {
-  "enabled": true,
-  "test_mode": false,
-  "update_interval_seconds": 300,
-  "live_update_interval": 15,
-  "recent_game_hours": 48,
-  "favorite_teams": ["TB", "DAL"],
-  "logo_dir": "assets/sports/nhl_logos",
-  "display_modes": {
-    "nhl_live": true,
-    "nhl_recent": true,
-    "nhl_upcoming": true
-  }
-}
+chmod +x setup_cache.sh
+./setup_cache.sh
 ```
 
-## Date Format Configuration
+This will:
+- Create `/var/cache/ledmatrix/` directory
+- Set proper ownership to your user account
+- Set permissions to allow the daemon user (which the system runs as) to write
+- Test writability for both your user and the daemon user
 
-You can customize the date format for upcoming games across all sports displays. The `use_short_date_format` setting in `config/config.json` under the `display` section controls this behavior.
-
-- **`"use_short_date_format": true`**: Displays dates in a short, numerical format (e.g., "8/30").
-- **`"use_short_date_format": false`** (Default): Displays dates in a more descriptive format with an ordinal suffix (e.g., "Aug 30th").
-
-### Example `config.json`
-
-```json
-"display": {
-    "hardware": {
-        ...
-    },
-    "runtime": {
-        ...
-    },
-    "display_durations": {
-        ...
-    },
-    "use_short_date_format": false // Set to true for "8/30" format
-},
+**If You Still See Cache Warnings:**
+If you see warnings about using temporary cache directory, run the permissions fix:
+```bash
+chmod +x fix_cache_permissions.sh
+./fix_cache_permissions.sh
 ```
 
-
-## Project Structure
-
-```
-LEDMatrix/
-├── assets/                  # Static assets like fonts and icons
-├── config/                  # Configuration files
-│   ├── config.json         # Main configuration
-│   └── config_secrets.template.json # Template for API keys and sensitive data
-├── src/                    # Source code
-│   ├── display_controller.py    # Main application controller
-│   ├── config_manager.py        # Configuration management
-│   ├── display_manager.py       # LED matrix display handling
-│   ├── cache_manager.py         # Caching system for API data
-│   ├── clock.py                 # Clock display module
-│   ├── weather_manager.py       # Weather display module
-│   ├── weather_icons.py         # Weather icon definitions
-│   ├── stock_manager.py         # Stock ticker display module
-│   ├── stock_news_manager.py    # Stock news display module
-│   ├── music_manager.py         # Music display orchestration
-│   ├── spotify_client.py        # Spotify API integration
-│   ├── ytm_client.py           # YouTube Music integration
-│   ├── authenticate_spotify.py  # Spotify authentication
-│   ├── authenticate_ytm.py      # YouTube Music authentication
-│   ├── calendar_manager.py      # Google Calendar integration
-│   ├── youtube_display.py       # YouTube channel stats display
-│   ├── text_display.py          # Custom text display module
-│   ├── font_test_manager.py     # Font testing utility
-│   ├── nhl_managers.py          # NHL game display
-│   ├── nba_managers.py          # NBA game display
-│   ├── mlb_manager.py           # MLB game display
-│   ├── nfl_managers.py          # NFL game display
-│   ├── soccer_managers.py       # Soccer game display
-│   ├── ncaa_fb_managers.py      # NCAA Football display
-│   ├── ncaa_baseball_managers.py # NCAA Baseball display
-│   └── ncaam_basketball_managers.py # NCAA Basketball display
-├── rpi-rgb-led-matrix-master/  # LED matrix library
-├── run.py                      # Main entry point
-├── display_controller.py       # Legacy entry point
-├── calendar_registration.py    # Calendar API setup
-├── run_font_test.py           # Font testing entry point
-├── ChuckBuilds.py             # Custom display module
-├── start_display.sh           # Service start script
-├── stop_display.sh            # Service stop script
-├── install_service.sh         # Service installation script
-├── ledmatrix.service          # Systemd service definition
-├── requirements.txt           # Python dependencies
-└── config.example.json        # Example configuration
+**Manual Setup:**
+If you prefer to set up manually:
+```bash
+sudo mkdir -p /var/cache/ledmatrix
+sudo chown $USER:$USER /var/cache/ledmatrix
+sudo chmod 777 /var/cache/ledmatrix
 ```
 
-The project is organized into several key components:
+**Cache Locations (in order of preference):**
+1. `~/.ledmatrix_cache/` (user's home directory) - **Most persistent**
+2. `/var/cache/ledmatrix/` (system cache directory) - **Persistent across restarts**
+3. `/opt/ledmatrix/cache/` (alternative persistent location)
+4. `/tmp/ledmatrix_cache/` (temporary directory) - **NOT persistent**
 
-- `src/`: Contains all the Python source code, organized by feature
-- `config/`: Configuration files for the application
-- `assets/`: Static assets like fonts and icons
-- `rpi-rgb-led-matrix-master/`: The LED matrix control library
-- Various utility scripts for running and managing the service
+**Note:** If the system falls back to `/tmp/ledmatrix_cache/`, you'll see a warning message and the cache will not persist across restarts.
 
-Each display module in `src/` is responsible for a specific feature (weather, sports, music, etc.) and follows a consistent pattern of data fetching, processing, and display rendering.
-
-## NHL, NBA, MLB, Soccer, NCAA FB, NCAA Men's Baseball, NCAA Men's Basketball Scoreboard Display
-The LEDMatrix system includes a comprehensive scoreboard display system with three display modes:
-
-### Display Modes
-- **Live Games**: Shows currently playing games with live scores and game status
-- **Recent Games**: Displays completed games from the last 48 hours (configurable)
-- **Upcoming Games**: Shows scheduled games for favorite teams
-
-### Features
-- Real-time score updates from ESPN API
-- Team logo display
-- Game status indicators (period, time remaining)
-- Configurable favorite teams
-- Automatic game switching
-- Built-in caching to reduce API calls
-- Test mode for development
-## API Usage Tracking
-
-The LEDMatrix system includes a built-in API usage counter that tracks API calls made by various managers in a 24-hour rolling window. This feature helps monitor API usage and ensure compliance with rate limits.
-
-### API Counter Features
-- **Real-time Tracking**: Counts API calls for weather, stocks, sports, and news data
-- **24-hour Window**: Rolling window that resets every 24 hours
-- **Web Interface Integration**: View current usage in the Overview tab of the web interface
-- **Forecast Display**: Shows predicted API usage based on current configuration
-- **Automatic Reset**: Counters automatically reset when the 24-hour window expires
-
-### Tracked API Calls
-- **Weather**: OpenWeatherMap API calls (geocoding + weather data)
-- **Stocks**: Yahoo Finance API calls for stock and crypto data
-- **Sports**: ESPN API calls for various sports leagues (NHL, NBA, MLB, NFL, etc.)
-- **News**: RSS feed and news API calls
-
-### Accessing API Metrics
-1. Open the web interface in your browser
-2. Navigate to the **Overview** tab
-3. Scroll down to the "API Calls (24h window)" section
-4. Click "Refresh API Metrics" to update the display
-
-The counter shows both actual usage and forecasted usage based on your current configuration settings.
 
 ## Caching System
 
@@ -1262,21 +1126,46 @@ The LEDMatrix system includes a robust caching mechanism to optimize API calls a
 - Temporary files are used for safe updates
 - JSON serialization handles all data types including timestamps
 
-## Final Notes
-- Most configuration is done via config/config.json
-- Refresh intervals for sports/weather/stocks are customizable
-- A caching system reduces API strain and helps ensure the display doesn't hammer external services (and ruin it for everyone)
-- Font files should be placed in assets/fonts/
-- You can test each module individually for debugging
-
-
-##What's Next?
-- Adding MQTT/HomeAssistant integration
-- Gambling odds (done!)
-- Building a user-friendly UI for easier configuration (done!)
+</details>
 
 
 
+<details>
+
+<summary>Date Format Configuration </summary>
+
+## Date Format Configuration
+
+You can customize the date format for upcoming games across all sports displays. The `use_short_date_format` setting in `config/config.json` under the `display` section controls this behavior.
+
+- **`"use_short_date_format": true`**: Displays dates in a short, numerical format (e.g., "8/30").
+- **`"use_short_date_format": false`** (Default): Displays dates in a more descriptive format with an ordinal suffix (e.g., "Aug 30th").
+
+### Example `config.json`
+
+```json
+"display": {
+    "hardware": {
+        ...
+    },
+    "runtime": {
+        ...
+    },
+    "display_durations": {
+        ...
+    },
+    "use_short_date_format": false // Set to true for "8/30" format
+},
+```
+
+</details>
+
+
+-----------------------------------------------------------------------------------
+
+<details>
+
+<summary>Passwordless Sudo for Web Interface Actions</summary>
 
 ## Granting Passwordless Sudo Access for Web Interface Actions
 
@@ -1338,6 +1227,8 @@ Manual Method:
 Granting passwordless `sudo` access, even for specific commands, has security implications. Ensure that the scripts and commands allowed are secure and cannot be easily exploited. The web interface itself should also be secured if it's exposed to untrusted networks.
 For `display_controller.py` and `stop_display.sh`, ensure their file permissions restrict write access to only trusted users, preventing unauthorized modification of these scripts which run with elevated privileges.
 
+</details>
+
 
 ## Web Interface V2 (simplified quick start)
 
@@ -1360,9 +1251,20 @@ Ensure your systemd service calls `start_web_conditionally.py` (installed by `in
 - Configure passwordless sudo for actions (start/stop service, reboot, shutdown) if desired.
     - Required for web Ui actions, look in the section above for the commands to run (chmod +x configure_web_sudo.sh & ./configure_web_sudo.sh)
 
-### 5) Old web UI (v1)
-The project now defaults to Web UI v2. The v1 interface can be  ignored.
-An LED matrix display system that provides real-time information display capabilities for various data sources. The system is highly configurable and supports multiple display modes that can be enabled or disabled based on user preferences.
+
+
+
+## Final Notes
+- Most configuration is done via config/config.json
+- Refresh intervals for sports/weather/stocks are customizable
+- A caching system reduces API strain and helps ensure the display doesn't hammer external services (and ruin it for everyone)
+- Font files should be placed in assets/fonts/
+- You can test each module individually for debugging
+
+
+##What's Next?
+- Adding MQTT/HomeAssistant integration
+
 
 
 ### If you've read this far — thanks!  
