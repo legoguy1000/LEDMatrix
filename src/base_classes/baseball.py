@@ -351,10 +351,6 @@ class BaseballLive(Baseball, SportsLive):
             if self.current_game["inning"] % 2 == 0: self.current_game["home_score"] = str(int(self.current_game["home_score"]) + 1)
             else: self.current_game["away_score"] = str(int(self.current_game["away_score"]) + 1)
 
-    def update(self):
-        """Update Live Games"""
-        self.live_update()
-
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live NCAA FB game."""  # Updated docstring
         try:

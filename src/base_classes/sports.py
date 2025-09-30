@@ -1217,11 +1217,11 @@ class SportsLive(SportsCore):
     def _test_mode_update(self) -> None:
         return
 
-    @abstractmethod
-    def update(self) -> None:
-        return
+    # @abstractmethod
+    # def update(self) -> None:
+    #     return
     
-    def live_update(self):
+    def update(self):
         """Update live game data and handle game switching."""
         if not self.is_enabled:
             return

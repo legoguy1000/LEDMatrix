@@ -101,10 +101,6 @@ class HockeyLive(Hockey, SportsLive):
                         self.current_game["period"] = 1
             self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
             # Always update display in test mode
-    
-    def update(self):
-        """Update Live Games"""
-        self.live_update()
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live NCAA FB game.""" # Updated docstring

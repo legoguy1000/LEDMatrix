@@ -157,10 +157,6 @@ class FootballLive(Football, SportsLive):
             except ValueError:
                 self.logger.warning("Test mode: Could not parse clock") # Changed log prefix
         # No actual display call here, let main loop handle it
-    
-    def update(self):
-        """Update Live Games"""
-        self.live_update()
         
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
