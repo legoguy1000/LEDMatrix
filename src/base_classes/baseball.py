@@ -336,12 +336,20 @@ class BaseballLive(Baseball, SportsLive):
 
     def _test_mode_update(self):
         if self.current_game and self.current_game["is_live"]:
-            self.current_game["bases_occupied"] = [
-                random.choice([True, False]) for _ in range(3)
-            ]
-            self.current_game["balls"] = random.choice([1, 2, 3])
-            self.current_game["strikes"] = random.choice([1, 2])
-            self.current_game["outs"] = random.choice([1, 2])
+            # self.current_game["bases_occupied"] = [
+            #     random.choice([True, False]) for _ in range(3)
+            # ]
+            # self.current_game["balls"] = random.choice([1, 2, 3])
+            # self.current_game["strikes"] = random.choice([1, 2])
+            # self.current_game["outs"] = random.choice([1, 2])
+            if self.current_game["inning_half"] == "top": self.current_game["inning_half"] = "bottom"
+            else: self.current_game["inning_half"] = "top"; self.current_game["inning"] += 1
+            self.current_game["balls"] = (self.current_game["balls"] + 1) % 4
+            self.current_game["strikes"] = (self.current_game["strikes"] + 1) % 3
+            self.current_game["outs"] = (self.current_game["outs"] + 1) % 3
+            self.current_game["bases_occupied"] = [not b for b in self.current_game["bases_occupied"]]
+            if self.current_game["inning"] % 2 == 0: self.current_game["home_score"] = str(int(self.current_game["home_score"]) + 1)
+            else: self.current_game["away_score"] = str(int(self.current_game["away_score"]) + 1)
 
     def update(self):
         """Update Live Games"""
