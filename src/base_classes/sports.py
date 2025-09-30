@@ -606,62 +606,22 @@ class SportsUpcoming(SportsCore):
             # Enhanced logging for debugging
             self.logger.info(f"Found {all_upcoming_games} total upcoming games in data")
             self.logger.info(f"Found {len(processed_games)} upcoming games after filtering")
-            
-            # Debug: Check what statuses we're seeing
-            status_counts = {}
-            status_names = {}  # Track actual status names from ESPN
-            favorite_team_games = []
-            for event in events:
-                game = self._extract_game_details(event)
-                if game:
-                    status = "upcoming" if game['is_upcoming'] else "final" if game['is_final'] else "live" if game['is_live'] else "other"
-                    status_counts[status] = status_counts.get(status, 0) + 1
-                    
-                    # Track actual ESPN status names
-                    actual_status = event.get('competitions', [{}])[0].get('status', {}).get('type', {})
-                    status_name = actual_status.get('name', 'Unknown')
-                    status_state = actual_status.get('state', 'Unknown')
-                    status_names[f"{status_name} ({status_state})"] = status_names.get(f"{status_name} ({status_state})", 0) + 1
-                    
-                    # Check for favorite team games regardless of status
-                    if (game['home_abbr'] in self.favorite_teams or game['away_abbr'] in self.favorite_teams):
-                        favorite_team_games.append({
-                            'teams': f"{game['away_abbr']} @ {game['home_abbr']}",
-                            'status': status,
-                            'date': game.get('start_time_utc', 'Unknown'),
-                            'espn_status': f"{status_name} ({status_state})"
-                        })
-                    
-                    # Special check for Tennessee game (Georgia @ Tennessee)
-                    if (game['home_abbr'] == 'TENN' and game['away_abbr'] == 'UGA') or (game['home_abbr'] == 'UGA' and game['away_abbr'] == 'TENN'):
-                        self.logger.info(f"Found Tennessee game: {game['away_abbr']} @ {game['home_abbr']} - {status} - {game.get('start_time_utc')} - ESPN: {status_name} ({status_state})")
-            
-            self.logger.info(f"Status breakdown: {status_counts}")
-            self.logger.info(f"ESPN status names: {status_names}")
-            if favorite_team_games:
-                self.logger.info(f"Favorite team games found: {len(favorite_team_games)}")
-                for game in favorite_team_games[:3]:  # Show first 3
-                    self.logger.info(f"  {game['teams']} - {game['status']} - {game['date']} - ESPN: {game['espn_status']}")
+
+            if processed_games:
+                for game in processed_games[:3]:  # Show first 3
+                    self.logger.info(f"  {game['away_abbr']}@{game['home_abbr']} - {game['start_time_utc']}")
             
             if self.favorite_teams and all_upcoming_games > 0:
                 self.logger.info(f"Favorite teams: {self.favorite_teams}")
                 self.logger.info(f"Found {favorite_games_found} favorite team upcoming games")
 
             # Filter for favorite teams only if the config is set
-            if self.show_favorite_teams_only:
-                # Get all games involving favorite teams
-                favorite_team_games = [game for game in processed_games
-                                      if game['home_abbr'] in self.favorite_teams or
-                                         game['away_abbr'] in self.favorite_teams]
-                
+            if self.show_favorite_teams_only:                
                 # Select one game per favorite team (earliest upcoming game for each team)
                 team_games = []
                 for team in self.favorite_teams:
-                    # Find games where this team is playing
-                    team_specific_games = [game for game in favorite_team_games
-                                          if game['home_abbr'] == team or game['away_abbr'] == team]
-                    
-                    if team_specific_games:
+                    # Find games where this team is playing                  
+                    if team_specific_games := [game for game in processed_games if game['home_abbr'] == team or game['away_abbr'] == team]:
                         # Sort by game time and take the earliest
                         team_specific_games.sort(key=lambda g: g.get('start_time_utc') or datetime.max.replace(tzinfo=timezone.utc))
                         team_games.append(team_specific_games[0])
