@@ -172,6 +172,7 @@ class MLBLiveManager(BaseMLBManager, BaseballLive):
                 "home_logo_path": Path(self.logo_dir, "TB.png"),
                 "away_logo_path": Path(self.logo_dir, "TEX.png"),
                 "start_time": datetime.now(timezone.utc).isoformat(),
+                "is_live": True, "is_final": False, "is_upcoming": False,
             }
             self.live_games = [self.current_game]
             self.logger.info("Initialized MLBLiveManager with test game: TB vs TEX")
