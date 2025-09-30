@@ -6,7 +6,7 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 import time
 from src.base_classes.data_sources import ESPNDataSource
-from src.base_classes.sports import SportsCore
+from src.base_classes.sports import SportsCore, SportsLive
 
 class Hockey(SportsCore):
     """Base class for hockey sports with common functionality."""
@@ -80,122 +80,31 @@ class Hockey(SportsCore):
             logging.error(f"Error extracting game details: {e} from event: {game_event.get('id')}", exc_info=True)
             return None
 
-class HockeyLive(Hockey):
+class HockeyLive(Hockey, SportsLive):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.update_interval = self.mode_config.get("live_update_interval", 15)
-        self.no_data_interval = 300
-        self.last_update = 0
-        self.live_games = []
-        self.current_game_index = 0
-        self.last_game_switch = 0
-        self.game_display_duration = self.mode_config.get("live_game_duration", 20)
-        self.last_display_update = 0
-        self.last_log_time = 0
-        self.log_interval = 300
 
-    def update(self):
-        """Update live game data."""
-        if not self.is_enabled: return
-        current_time = time.time()
-        interval = self.no_data_interval if not self.live_games else self.update_interval
-
-        if current_time - self.last_update >= interval:
-            self.last_update = current_time
-            
-            if self.show_ranking:
-                self._fetch_team_rankings()
-
-            if self.test_mode:
-                # For testing, we'll just update the clock to show it's working
-                if self.current_game:
-                    minutes = int(self.current_game["clock"].split(":")[0])
-                    seconds = int(self.current_game["clock"].split(":")[1])
-                    seconds -= 1
-                    if seconds < 0:
-                        seconds = 59
-                        minutes -= 1
-                        if minutes < 0:
-                            minutes = 19
-                            if self.current_game["period"] < 3:
-                                self.current_game["period"] += 1
-                            else:
-                                self.current_game["period"] = 1
-                    self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
-                    # Always update display in test mode
-                    self.display(force_clear=True)
-            else:
-                # Fetch live game data from ESPN API
-                data = self._fetch_data()
-                if data and "events" in data:
-                    # Find all live games involving favorite teams
-                    new_live_games = []
-                    for event in data["events"]:
-                        details = self._extract_game_details(event)
-                        if details and (details["is_live"] or details["is_halftime"]):
-                            # If show_favorite_teams_only is true, only add if it's a favorite.
-                            # Otherwise, add all games.
-                            if self.show_all_live or not self.show_favorite_teams_only or (self.show_favorite_teams_only and (details["home_abbr"] in self.favorite_teams or details["away_abbr"] in self.favorite_teams)):
-                                if self.show_odds:
-                                    self._fetch_odds(details)
-                                new_live_games.append(details)
-                    
-                    # Only log if there's a change in games or enough time has passed
-                    should_log = (
-                        current_time - self.last_log_time >= self.log_interval or
-                        len(new_live_games) != len(self.live_games) or
-                        not self.live_games  # Log if we had no games before
-                    )
-                    
-                    if should_log:
-                        if new_live_games:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "all teams"
-                            self.logger.info(f"Found {len(new_live_games)} live games involving {filter_text}")
-                            for game in new_live_games:
-                                self.logger.info(f"Live game: {game['away_abbr']} vs {game['home_abbr']} - Period {game['period']}, {game['clock']}")
-                        else:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "criteria"
-                            self.logger.info(f"No live games found matching {filter_text}")
-                        self.last_log_time = current_time
-                    
-                    if new_live_games:
-                        # Update the current game with the latest data
-                        for new_game in new_live_games:
-                            if self.current_game and (
-                                (new_game["home_abbr"] == self.current_game["home_abbr"] and 
-                                 new_game["away_abbr"] == self.current_game["away_abbr"]) or
-                                (new_game["home_abbr"] == self.current_game["away_abbr"] and 
-                                 new_game["away_abbr"] == self.current_game["home_abbr"])
-                            ):
-                                self.current_game = new_game
-                                break
-                        
-                        # Only update the games list if we have new games
-                        if not self.live_games or set(game["away_abbr"] + game["home_abbr"] for game in new_live_games) != set(game["away_abbr"] + game["home_abbr"] for game in self.live_games):
-                            self.live_games = new_live_games
-                            # If we don't have a current game or it's not in the new list, start from the beginning
-                            if not self.current_game or self.current_game not in self.live_games:
-                                self.current_game_index = 0
-                                self.current_game = self.live_games[0]
-                                self.last_game_switch = current_time
-                        
-                        # Update display if data changed, limit rate
-                        if current_time - self.last_display_update >= 1.0:
-                            # self.display(force_clear=True) # REMOVED: DisplayController handles this
-                            self.last_display_update = current_time
-                        
+    def _test_mode_update(self):
+        if self.current_game and self.current_game["is_live"]:
+        # For testing, we'll just update the clock to show it's working
+            minutes = int(self.current_game["clock"].split(":")[0])
+            seconds = int(self.current_game["clock"].split(":")[1])
+            seconds -= 1
+            if seconds < 0:
+                seconds = 59
+                minutes -= 1
+                if minutes < 0:
+                    minutes = 19
+                    if self.current_game["period"] < 3:
+                        self.current_game["period"] += 1
                     else:
-                        # No live games found
-                        self.live_games = []
-                        self.current_game = None
-                
-                # Check if it's time to switch games
-                if len(self.live_games) > 1 and (current_time - self.last_game_switch) >= self.game_display_duration:
-                    self.current_game_index = (self.current_game_index + 1) % len(self.live_games)
-                    self.current_game = self.live_games[self.current_game_index]
-                    self.last_game_switch = current_time
-                    # self.display(force_clear=True) # REMOVED: DisplayController handles this
-                    self.last_display_update = current_time # Track time for potential display update
+                        self.current_game["period"] = 1
+            self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
+            # Always update display in test mode
+    
+    def update(self):
+        """Update Live Games"""
+        self.live_update()
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live NCAA FB game.""" # Updated docstring

@@ -1,14 +1,16 @@
-import os
 import logging
-import requests
-from typing import Dict, Any, Optional, List
-from pathlib import Path
+import os
 from datetime import datetime, timedelta
-from src.display_manager import DisplayManager
-from src.cache_manager import CacheManager
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import pytz
-from src.base_classes.sports import SportsRecent, SportsUpcoming
+import requests
+
 from src.base_classes.football import Football, FootballLive
+from src.base_classes.sports import SportsRecent, SportsUpcoming
+from src.cache_manager import CacheManager
+from src.display_manager import DisplayManager
 
 # Constants
 ESPN_NFL_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
@@ -50,7 +52,7 @@ class BaseNFLManager(Football): # Renamed class
         if now.month < 8:
             season_year = now.year - 1
         datestring = f"{season_year}0801-{season_year+1}0301"
-        cache_key = f"nfl_schedule_{season_year}"
+        cache_key = f"{self.sport_key}_schedule_{season_year}"
 
         # Check cache first
         if use_cache:
@@ -58,14 +60,14 @@ class BaseNFLManager(Football): # Renamed class
             if cached_data:
                 # Validate cached data structure
                 if isinstance(cached_data, dict) and 'events' in cached_data:
-                    self.logger.info(f"[NFL] Using cached schedule for {season_year}")
+                    self.logger.info(f"Using cached schedule for {season_year}")
                     return cached_data
                 elif isinstance(cached_data, list):
                     # Handle old cache format (list of events)
-                    self.logger.info(f"[NFL] Using cached schedule for {season_year} (legacy format)")
+                    self.logger.info(f"Using cached schedule for {season_year} (legacy format)")
                     return {'events': cached_data}
                 else:
-                    self.logger.warning(f"[NFL] Invalid cached data format for {season_year}: {type(cached_data)}")
+                    self.logger.warning(f"Invalid cached data format for {season_year}: {type(cached_data)}")
                     # Clear invalid cache
                     self.cache_manager.clear_cache(cache_key)
         
@@ -74,7 +76,7 @@ class BaseNFLManager(Football): # Renamed class
             return self._fetch_nfl_api_data_sync(use_cache)
         
         # Start background fetch
-        self.logger.info(f"[NFL] Starting background fetch for {season_year} season schedule...")
+        self.logger.info(f"Starting background fetch for {season_year} season schedule...")
         
         def fetch_callback(result):
             """Callback when background fetch completes."""
@@ -125,7 +127,7 @@ class BaseNFLManager(Football): # Renamed class
         current_year = now.year
         cache_key = f"nfl_schedule_{current_year}"
 
-        self.logger.info(f"[NFL] Fetching full {current_year} season schedule from ESPN API (sync mode)...")
+        self.logger.info(f"Fetching full {current_year} season schedule from ESPN API (sync mode)...")
         try:
             response = self.session.get(ESPN_NFL_SCOREBOARD_URL, params={"dates": current_year, "limit":1000}, headers=self.headers, timeout=15)
             response.raise_for_status()
@@ -135,10 +137,10 @@ class BaseNFLManager(Football): # Renamed class
             if use_cache:
                 self.cache_manager.set(cache_key, events)
             
-            self.logger.info(f"[NFL] Successfully fetched {len(events)} events for the {current_year} season.")
+            self.logger.info(f"Successfully fetched {len(events)} events for the {current_year} season.")
             return {'events': events}
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"[NFL] API error fetching full schedule: {e}")
+            self.logger.error(f"API error fetching full schedule: {e}")
             return None
 
     def _fetch_data(self) -> Optional[Dict]:

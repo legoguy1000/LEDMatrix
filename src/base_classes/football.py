@@ -6,7 +6,7 @@ import logging
 from PIL import Image, ImageDraw, ImageFont
 import time
 from src.base_classes.data_sources import ESPNDataSource
-from src.base_classes.sports import SportsCore
+from src.base_classes.sports import SportsCore, SportsLive
 
 class Football(SportsCore):
     """Base class for football sports with common functionality."""
@@ -116,175 +116,52 @@ class Football(SportsCore):
             logging.error(f"Error extracting game details: {e} from event: {game_event.get('id')}", exc_info=True)
             return None
 
-class FootballLive(Football):
+class FootballLive(Football, SportsLive):
     def __init__(self, config: Dict[str, Any], display_manager: DisplayManager, cache_manager: CacheManager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.update_interval = self.mode_config.get("live_update_interval", 15)
-        self.no_data_interval = 300
-        self.last_update = 0
-        self.live_games = []
-        self.current_game_index = 0
-        self.last_game_switch = 0
-        self.game_display_duration = self.mode_config.get("live_game_duration", 20)
-        self.last_display_update = 0
-        self.last_log_time = 0
-        self.log_interval = 300
 
+    def _test_mode_update(self):
+        if self.current_game and self.current_game["is_live"]:
+            try:
+                minutes, seconds = map(int, self.current_game["clock"].split(':'))
+                seconds -= 1
+                if seconds < 0:
+                    seconds = 59
+                    minutes -= 1
+                    if minutes < 0:
+                        # Simulate end of quarter/game
+                        if self.current_game["period"] < 4: # Q4 is period 4
+                            self.current_game["period"] += 1
+                            # Update period_text based on new period
+                            if self.current_game["period"] == 1: self.current_game["period_text"] = "Q1"
+                            elif self.current_game["period"] == 2: self.current_game["period_text"] = "Q2"
+                            elif self.current_game["period"] == 3: self.current_game["period_text"] = "Q3"
+                            elif self.current_game["period"] == 4: self.current_game["period_text"] = "Q4"
+                            # Reset clock for next quarter (e.g., 15:00)
+                            minutes, seconds = 15, 0
+                        else:
+                            # Simulate game end
+                            self.current_game["is_live"] = False
+                            self.current_game["is_final"] = True
+                            self.current_game["period_text"] = "Final"
+                            minutes, seconds = 0, 0
+                self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
+                # Simulate down change occasionally
+                if seconds % 15 == 0:
+                        self.current_game["down_distance_text"] = f"{['1st','2nd','3rd','4th'][seconds % 4]} & {seconds % 10 + 1}"
+                self.current_game["status_text"] = f"{self.current_game['period_text']} {self.current_game['clock']}"
+
+                # Display update handled by main loop or explicit call if needed immediately
+                # self.display(force_clear=True) # Only if immediate update is desired here
+
+            except ValueError:
+                self.logger.warning("Test mode: Could not parse clock") # Changed log prefix
+        # No actual display call here, let main loop handle it
+    
     def update(self):
-        """Update live game data and handle game switching."""
-        if not self.is_enabled:
-            return
-
-        # Define current_time and interval before the problematic line (originally line 455)
-        # Ensure 'import time' is present at the top of the file.
-        current_time = time.time()
-
-        # Define interval using a pattern similar to NFLLiveManager's update method.
-        # Uses getattr for robustness, assuming attributes for live_games, test_mode,
-        # no_data_interval, and update_interval are available on self.
-        _live_games_attr = getattr(self, 'live_games', [])
-        _test_mode_attr = getattr(self, 'test_mode', False) # test_mode is often from a base class or config
-        _no_data_interval_attr = getattr(self, 'no_data_interval', 300) # Default similar to NFLLiveManager
-        _update_interval_attr = getattr(self, 'update_interval', 15)   # Default similar to NFLLiveManager
-
-        interval = _no_data_interval_attr if not _live_games_attr and not _test_mode_attr else _update_interval_attr
+        """Update Live Games"""
+        self.live_update()
         
-        # Original line from traceback (line 455), now with variables defined:
-        if current_time - self.last_update >= interval:
-            self.last_update = current_time
-
-            # Fetch rankings if enabled
-            if self.show_ranking:
-                self._fetch_team_rankings()
-
-            if self.test_mode:
-                # Simulate clock running down in test mode
-                if self.current_game and self.current_game["is_live"]:
-                    try:
-                        minutes, seconds = map(int, self.current_game["clock"].split(':'))
-                        seconds -= 1
-                        if seconds < 0:
-                            seconds = 59
-                            minutes -= 1
-                            if minutes < 0:
-                                # Simulate end of quarter/game
-                                if self.current_game["period"] < 4: # Q4 is period 4
-                                    self.current_game["period"] += 1
-                                    # Update period_text based on new period
-                                    if self.current_game["period"] == 1: self.current_game["period_text"] = "Q1"
-                                    elif self.current_game["period"] == 2: self.current_game["period_text"] = "Q2"
-                                    elif self.current_game["period"] == 3: self.current_game["period_text"] = "Q3"
-                                    elif self.current_game["period"] == 4: self.current_game["period_text"] = "Q4"
-                                    # Reset clock for next quarter (e.g., 15:00)
-                                    minutes, seconds = 15, 0
-                                else:
-                                    # Simulate game end
-                                    self.current_game["is_live"] = False
-                                    self.current_game["is_final"] = True
-                                    self.current_game["period_text"] = "Final"
-                                    minutes, seconds = 0, 0
-                        self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
-                        # Simulate down change occasionally
-                        if seconds % 15 == 0:
-                             self.current_game["down_distance_text"] = f"{['1st','2nd','3rd','4th'][seconds % 4]} & {seconds % 10 + 1}"
-                        self.current_game["status_text"] = f"{self.current_game['period_text']} {self.current_game['clock']}"
-
-                        # Display update handled by main loop or explicit call if needed immediately
-                        # self.display(force_clear=True) # Only if immediate update is desired here
-
-                    except ValueError:
-                        self.logger.warning("Test mode: Could not parse clock") # Changed log prefix
-                # No actual display call here, let main loop handle it
-            else:
-                # Fetch live game data
-                data = self._fetch_data()
-                new_live_games = []
-                if data and "events" in data:
-                    for game in data["events"]:
-                        details = self._extract_game_details(game)
-                        if details and (details["is_live"] or details["is_halftime"]):
-                            # If show_favorite_teams_only is true, only add if it's a favorite.
-                            # Otherwise, add all games.
-                            if self.show_all_live or not self.show_favorite_teams_only or (self.show_favorite_teams_only and (details["home_abbr"] in self.favorite_teams or details["away_abbr"] in self.favorite_teams)):
-                                if self.show_odds:
-                                    self._fetch_odds(details)
-                                new_live_games.append(details)
-                    # Log changes or periodically
-                    current_time_for_log = time.time() # Use a consistent time for logging comparison
-                    should_log = (
-                        current_time_for_log - self.last_log_time >= self.log_interval or
-                        len(new_live_games) != len(self.live_games) or
-                        any(g1['id'] != g2.get('id') for g1, g2 in zip(self.live_games, new_live_games)) or # Check if game IDs changed
-                        (not self.live_games and new_live_games) # Log if games appeared
-                    )
-
-                    if should_log:
-                        if new_live_games:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "all teams"
-                            self.logger.info(f"Found {len(new_live_games)} live/halftime games for {filter_text}.")
-                            for game_info in new_live_games: # Renamed game to game_info
-                                self.logger.info(f"  - {game_info['away_abbr']}@{game_info['home_abbr']} ({game_info.get('status_text', 'N/A')})")
-                        else:
-                            filter_text = "favorite teams" if self.show_favorite_teams_only or self.show_all_live else "criteria"
-                            self.logger.info(f"No live/halftime games found for {filter_text}.")
-                        self.last_log_time = current_time_for_log
-
-
-                    # Update game list and current game
-                    if new_live_games:
-                        # Check if the games themselves changed, not just scores/time
-                        new_game_ids = {g['id'] for g in new_live_games}
-                        current_game_ids = {g['id'] for g in self.live_games}
-
-                        if new_game_ids != current_game_ids:
-                            self.live_games = sorted(new_live_games, key=lambda g: g.get('start_time_utc') or datetime.now(timezone.utc)) # Sort by start time
-                            # Reset index if current game is gone or list is new
-                            if not self.current_game or self.current_game['id'] not in new_game_ids:
-                                self.current_game_index = 0
-                                self.current_game = self.live_games[0] if self.live_games else None
-                                self.last_game_switch = current_time
-                            else:
-                                # Find current game's new index if it still exists
-                                try:
-                                     self.current_game_index = next(i for i, g in enumerate(self.live_games) if g['id'] == self.current_game['id'])
-                                     self.current_game = self.live_games[self.current_game_index] # Update current_game with fresh data
-                                except StopIteration: # Should not happen if check above passed, but safety first
-                                     self.current_game_index = 0
-                                     self.current_game = self.live_games[0]
-                                     self.last_game_switch = current_time
-
-                        else:
-                             # Just update the data for the existing games
-                             temp_game_dict = {g['id']: g for g in new_live_games}
-                             self.live_games = [temp_game_dict.get(g['id'], g) for g in self.live_games] # Update in place
-                             if self.current_game:
-                                  self.current_game = temp_game_dict.get(self.current_game['id'], self.current_game)
-
-                        # Display update handled by main loop based on interval
-
-                    else:
-                        # No live games found
-                        if self.live_games: # Were there games before?
-                            self.logger.info("Live games previously showing have ended or are no longer live.") # Changed log prefix
-                        self.live_games = []
-                        self.current_game = None
-                        self.current_game_index = 0
-
-                else:
-                    # Error fetching data or no events
-                     if self.live_games: # Were there games before?
-                         self.logger.warning("Could not fetch update; keeping existing live game data for now.") # Changed log prefix
-                     else:
-                         self.logger.warning("Could not fetch data and no existing live games.") # Changed log prefix
-                         self.current_game = None # Clear current game if fetch fails and no games were active
-
-            # Handle game switching (outside test mode check)
-            if not self.test_mode and len(self.live_games) > 1 and (current_time - self.last_game_switch) >= self.game_display_duration:
-                self.current_game_index = (self.current_game_index + 1) % len(self.live_games)
-                self.current_game = self.live_games[self.current_game_index]
-                self.last_game_switch = current_time
-                self.logger.info(f"Switched live view to: {self.current_game['away_abbr']}@{self.current_game['home_abbr']}") # Changed log prefix
-                # Force display update via flag or direct call if needed, but usually let main loop handle
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live NCAA FB game.""" # Updated docstring

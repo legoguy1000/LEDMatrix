@@ -133,7 +133,8 @@ class NCAAMHockeyLiveManager(BaseNCAAMHockeyManager, HockeyLive): # Renamed clas
                 "home_logo_path": Path(self.logo_dir, "RIT.png"),
                 "away_logo_path": Path(self.logo_dir, "CLAR .png"),
                 "game_time": "7:30 PM",
-                "game_date": "Apr 17"
+                "game_date": "Apr 17",
+                "is_live": True, "is_final": False, "is_upcoming": False,
             }
             self.live_games = [self.current_game]
             self.logger.info("Initialized NCAAMHockeyLiveManager with test game: RIT vs CLAR ")
