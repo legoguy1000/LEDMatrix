@@ -47,69 +47,116 @@ class BaseNCAAMHockeyManager(Hockey): # Renamed class
         self.logger.info(f"Initialized NCAAMHockey manager with display dimensions: {self.display_width}x{self.display_height}")
         self.logger.info(f"Logo directory: {self.logo_dir}")
         self.logger.info(f"Display modes - Recent: {self.recent_enabled}, Upcoming: {self.upcoming_enabled}, Live: {self.live_enabled}")
- 
-    def _get_timezone(self):
-        try:
-            timezone_str = self.config.get('timezone', 'UTC')
-            return pytz.timezone(timezone_str)
-        except pytz.UnknownTimeZoneError:
-            return pytz.utc
 
-    def _should_log(self, warning_type: str, cooldown: int = 60) -> bool:
-        """Check if we should log a warning based on cooldown period."""
-        current_time = time.time()
-        if current_time - self._last_warning_time > cooldown:
-            self._last_warning_time = current_time
-            return True
-        return False
     
-    def _fetch_ncaa_fb_api_data(self, use_cache: bool = True) -> Optional[Dict]:
+    def _fetch_ncaa_hockey_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
         Fetches the full season schedule for NCAAMH, caches it, and then filters
         for relevant games based on the current configuration.
         """
         now = datetime.now(pytz.utc)
-        current_year = now.year
-        years_to_check = [current_year]
+        season_year = now.year
         if now.month < 8:
-            years_to_check.append(current_year - 1)
+            season_year = now.year - 1
+        datestring = f"{season_year}0901-{season_year+1}0501"
+        cache_key = f"ncaa_mens_hockey_schedule_{season_year}"
 
-        all_events = []
-        for year in years_to_check:
-            cache_key = f"ncaamh_schedule_{year}"
-            if use_cache:
-                cached_data = self.cache_manager.get(cache_key)
-                if cached_data:
-                    self.logger.info(f"[NCAAMH] Using cached schedule for {year}")
-                    all_events.extend(cached_data)
-                    continue
-            
-            self.logger.info(f"[NCAAMH] Fetching full {year} season schedule from ESPN API...")
-            try:
-                response = self.session.get(ESPN_NCAAMH_SCOREBOARD_URL, params={"dates": year,"limit":1000},headers=self.headers, timeout=15)
-                response.raise_for_status()
-                data = response.json()
-                events = data.get('events', [])
-                if use_cache:
-                    self.cache_manager.set(cache_key, events)
-                self.logger.info(f"[NCAAMH] Successfully fetched and cached {len(events)} events for {year} season.")
-                all_events.extend(events)
-            except requests.exceptions.RequestException as e:
-                self.logger.error(f"[NCAAMH] API error fetching full schedule for {year}: {e}")
-                continue
+        if use_cache:
+            cached_data = self.cache_manager.get(cache_key)
+            if cached_data:
+                # Validate cached data structure
+                if isinstance(cached_data, dict) and 'events' in cached_data:
+                    self.logger.info(f"Using cached schedule for {season_year}")
+                    return cached_data
+                elif isinstance(cached_data, list):
+                    # Handle old cache format (list of events)
+                    self.logger.info(f"Using cached schedule for {season_year} (legacy format)")
+                    return {'events': cached_data}
+                else:
+                    self.logger.warning(f"Invalid cached data format for {season_year}: {type(cached_data)}")
+                    # Clear invalid cache
+                    self.cache_manager.clear_cache(cache_key)
         
-        if not all_events:
-            self.logger.warning("[NCAAMH] No events found in schedule data.")
+        # If background service is disabled, fall back to synchronous fetch
+        if not self.background_enabled or not self.background_service:
+            return self._fetch_ncaa_api_data_sync(use_cache)
+        
+        self.logger.info(f"Fetching full {season_year} season schedule from ESPN API...")
+
+        # Start background fetch
+        self.logger.info(f"Starting background fetch for {season_year} season schedule...")
+        
+        def fetch_callback(result):
+            """Callback when background fetch completes."""
+            if result.success:
+                self.logger.info(f"Background fetch completed for {season_year}: {len(result.data.get('events'))} events")
+            else:
+                self.logger.error(f"Background fetch failed for {season_year}: {result.error}")
+            
+            # Clean up request tracking
+            if season_year in self.background_fetch_requests:
+                del self.background_fetch_requests[season_year]
+        
+        # Get background service configuration
+        background_config = self.mode_config.get("background_service", {})
+        timeout = background_config.get("request_timeout", 30)
+        max_retries = background_config.get("max_retries", 3)
+        priority = background_config.get("priority", 2)
+        
+        # Submit background fetch request
+        request_id = self.background_service.submit_fetch_request(
+            sport="ncaa_mens_hockey",
+            year=season_year,
+            url=ESPN_NCAAMH_SCOREBOARD_URL,
+            cache_key=cache_key,
+            params={"dates": datestring, "limit": 1000},
+            headers=self.headers,
+            timeout=timeout,
+            max_retries=max_retries,
+            priority=priority,
+            callback=fetch_callback
+        )
+        
+        # Track the request
+        self.background_fetch_requests[season_year] = request_id
+        
+        # For immediate response, try to get partial data
+        partial_data = self._get_weeks_data()
+        if partial_data:
+            return partial_data
+        return None
+
+
+    def _fetch_ncaa_api_data_sync(self, use_cache: bool = True) -> Optional[Dict]:
+        """
+        Synchronous fallback for fetching NCAA Mens Hockey data when background service is disabled.
+        """
+        now = datetime.now(pytz.utc)
+        current_year = now.year
+        cache_key = f"ncaa_mens_hockey_schedule_{current_year}"
+
+        self.logger.info(f"Fetching full {current_year} season schedule from ESPN API (sync mode)...")
+        try:
+            response = self.session.get(ESPN_NCAAMH_SCOREBOARD_URL, params={"dates": current_year, "limit":1000}, headers=self.headers, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            events = data.get('events', [])
+            
+            if use_cache:
+                self.cache_manager.set(cache_key, events)
+            
+            self.logger.info(f"Successfully fetched {len(events)} events for the {current_year} season.")
+            return {'events': events}
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"[API error fetching full schedule: {e}")
             return None
-
-        return {'events': all_events}
-
+        
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""
         if isinstance(self, NCAAMHockeyLiveManager):
-            return self._fetch_ncaa_fb_api_data(use_cache=False)
+            return self._fetch_todays_games()
         else:
-            return self._fetch_ncaa_fb_api_data(use_cache=True)
+            return self._fetch_ncaa_hockey_api_data(use_cache=True)
 
 class NCAAMHockeyLiveManager(BaseNCAAMHockeyManager, HockeyLive): # Renamed class
     """Manager for live NCAA Mens Hockey games."""
