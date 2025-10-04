@@ -23,6 +23,7 @@ from src.odds_ticker_manager import OddsTickerManager
 from src.leaderboard_manager import LeaderboardManager
 from src.nhl_managers import NHLLiveManager, NHLRecentManager, NHLUpcomingManager
 from src.nba_managers import NBALiveManager, NBARecentManager, NBAUpcomingManager
+from src.wnba_managers import WNBALiveManager, WNBARecentManager, WNBAUpcomingManager
 from src.mlb_manager import MLBLiveManager, MLBRecentManager, MLBUpcomingManager
 from src.milb_manager import MiLBLiveManager, MiLBRecentManager, MiLBUpcomingManager
 from src.soccer_managers import SoccerLiveManager, SoccerRecentManager, SoccerUpcomingManager
@@ -131,6 +132,21 @@ class DisplayController:
             self.nba_recent = None
             self.nba_upcoming = None
         logger.info("NBA managers initialized in %.3f seconds", time.time() - nba_time)
+            
+        # Initialize WNBA managers if enabled
+        wnba_time = time.time()
+        wnba_enabled = self.config.get('wnba_scoreboard', {}).get('enabled', False)
+        wnba_display_modes = self.config.get('wnba_scoreboard', {}).get('display_modes', {})
+        
+        if wnba_enabled:
+            self.wnba_live = WNBALiveManager(self.config, self.display_manager, self.cache_manager) if wnba_display_modes.get('wnba_live', True) else None
+            self.wnba_recent = WNBARecentManager(self.config, self.display_manager, self.cache_manager) if wnba_display_modes.get('wnba_recent', True) else None
+            self.wnba_upcoming = WNBAUpcomingManager(self.config, self.display_manager, self.cache_manager) if wnba_display_modes.get('wnba_upcoming', True) else None
+        else:
+            self.wnba_live = None
+            self.wnba_recent = None
+            self.wnba_upcoming = None
+        logger.info("WNBA managers initialized in %.3f seconds", time.time() - wnba_time)
 
         # Initialize MLB managers if enabled
         mlb_time = time.time()
@@ -278,6 +294,7 @@ class DisplayController:
         # Read live_priority flags for all sports
         self.nhl_live_priority = self.config.get('nhl_scoreboard', {}).get('live_priority', True)
         self.nba_live_priority = self.config.get('nba_scoreboard', {}).get('live_priority', True)
+        self.wnba_live_priority = self.config.get('wnba_scoreboard', {}).get('live_priority', True)
         self.mlb_live_priority = self.config.get('mlb_scoreboard', {}).get('live_priority', True)
         self.milb_live_priority = self.config.get('milb_scoreboard', {}).get('live_priority', True)
         self.soccer_live_priority = self.config.get('soccer_scoreboard', {}).get('live_priority', True)
@@ -311,6 +328,9 @@ class DisplayController:
         if nba_enabled:
             if self.nba_recent: self.available_modes.append('nba_recent')
             if self.nba_upcoming: self.available_modes.append('nba_upcoming')
+        if wnba_enabled:
+            if self.wnba_recent: self.available_modes.append('wnba_recent')
+            if self.wnba_upcoming: self.available_modes.append('wnba_upcoming')
         if mlb_enabled:
             if self.mlb_recent: self.available_modes.append('mlb_recent')
             if self.mlb_upcoming: self.available_modes.append('mlb_upcoming')
@@ -361,6 +381,11 @@ class DisplayController:
         self.nba_showing_recent = True
         self.nba_favorite_teams = self.config.get('nba_scoreboard', {}).get('favorite_teams', [])
         self.in_nba_rotation = False
+        
+        self.wnba_current_team_index = 0
+        self.wnba_showing_recent = True
+        self.wnba_favorite_teams = self.config.get('wnba_scoreboard', {}).get('favorite_teams', [])
+        self.in_wnba_rotation = False
         
         self.soccer_current_team_index = 0 # Soccer rotation state
         self.soccer_showing_recent = True
@@ -425,6 +450,9 @@ class DisplayController:
             'nba_live': 30,
             'nba_recent': 20,
             'nba_upcoming': 20,
+            'wnba_live': 30,
+            'wnba_recent': 20,
+            'wnba_upcoming': 20,
             'mlb_live': 30,
             'mlb_recent': 20,
             'mlb_upcoming': 20,
@@ -464,6 +492,8 @@ class DisplayController:
             logger.info(f"NHL Favorite teams: {self.nhl_favorite_teams}")
         if nba_enabled:
             logger.info(f"NBA Favorite teams: {self.nba_favorite_teams}")
+        if wnba_enabled:
+            logger.info(f"WNBA Favorite teams: {self.wnba_favorite_teams}")
         if mlb_enabled:
             logger.info(f"MLB Favorite teams: {self.mlb_favorite_teams}")
         if milb_enabled:
@@ -676,6 +706,10 @@ class DisplayController:
             if self.nba_live: self.nba_live.update()
             if self.nba_recent: self.nba_recent.update()
             if self.nba_upcoming: self.nba_upcoming.update()
+        elif current_sport == 'wnba':
+            if self.wnba_live: self.wnba_live.update()
+            if self.wnba_recent: self.wnba_recent.update()
+            if self.wnba_upcoming: self.wnba_upcoming.update()
         elif current_sport == 'mlb':
             if self.mlb_live: self.mlb_live.update()
             if self.mlb_recent: self.mlb_recent.update()
@@ -722,6 +756,10 @@ class DisplayController:
             if self.nba_live: self.nba_live.update()
             if self.nba_recent: self.nba_recent.update()
             if self.nba_upcoming: self.nba_upcoming.update()
+            
+            if self.wnba_live: self.wnba_live.update()
+            if self.wnba_recent: self.wnba_recent.update()
+            if self.wnba_upcoming: self.wnba_upcoming.update()
             
             if self.mlb_live: self.mlb_live.update()
             if self.mlb_recent: self.mlb_recent.update()
@@ -772,6 +810,8 @@ class DisplayController:
             live_checks['nhl'] = self.nhl_live and self.nhl_live.live_games
         if 'nba_scoreboard' in self.config and self.config['nba_scoreboard'].get('enabled', False):
             live_checks['nba'] = self.nba_live and self.nba_live.live_games
+        if 'wnba_scoreboard' in self.config and self.config['wnba_scoreboard'].get('enabled', False):
+            live_checks['wnba'] = self.wnba_live and self.wnba_live.live_games
         if 'mlb' in self.config and self.config['mlb'].get('enabled', False):
             live_checks['mlb'] = self.mlb_live and self.mlb_live.live_games
         if 'milb' in self.config and self.config['milb'].get('enabled', False):
@@ -820,6 +860,9 @@ class DisplayController:
         elif sport == 'nba':
             manager_recent = self.nba_recent
             manager_upcoming = self.nba_upcoming
+        elif sport == 'wnba':
+            manager_recent = self.wnba_recent
+            manager_upcoming = self.wnba_upcoming
         elif sport == 'mlb':
             manager_recent = self.mlb_recent
             manager_upcoming = self.mlb_upcoming
@@ -874,6 +917,10 @@ class DisplayController:
             favorite_teams = self.nba_favorite_teams
             manager_recent = self.nba_recent
             manager_upcoming = self.nba_upcoming
+        elif sport == 'wnba':
+            favorite_teams = self.wnba_favorite_teams
+            manager_recent = self.wnba_recent
+            manager_upcoming = self.wnba_upcoming
         elif sport == 'mlb':
             favorite_teams = self.mlb_favorite_teams
             manager_recent = self.mlb_recent
@@ -896,73 +943,6 @@ class DisplayController:
             manager_upcoming = self.ncaa_fb_upcoming
             
         return bool(favorite_teams and (manager_recent or manager_upcoming))
-
-    def _rotate_team_games(self, sport: str = 'nhl') -> None:
-        """Rotate through games for favorite teams. (No longer used directly in loop)"""
-        # This logic is now mostly handled within each manager's display/update
-        # Keeping the structure in case direct rotation is needed later.
-        if not self._has_team_games(sport):
-            return
-
-        if sport == 'nhl':
-            if not self.nhl_favorite_teams: return
-            current_team = self.nhl_favorite_teams[self.nhl_current_team_index]
-            # ... (rest of NHL rotation logic - now less relevant)
-        elif sport == 'nba':
-             if not self.nba_favorite_teams: return
-             current_team = self.nba_favorite_teams[self.nba_current_team_index]
-             # ... (rest of NBA rotation logic)
-        elif sport == 'mlb':
-            if not self.mlb_favorite_teams: return
-            current_team = self.mlb_favorite_teams[self.mlb_current_team_index]
-            # ... (rest of MLB rotation logic)
-        elif sport == 'milb':
-            if not self.config.get('milb_scoreboard', {}).get('favorite_teams', []): return
-            current_team = self.config['milb_scoreboard']['favorite_teams'][self.milb_current_team_index]
-            # ... (rest of MiLB rotation logic)
-        elif sport == 'soccer':
-            if not self.soccer_favorite_teams: return
-            current_team = self.soccer_favorite_teams[self.soccer_current_team_index]
-            # Try to find games for current team (recent first)
-            found_games = self._get_team_games(current_team, 'soccer', self.soccer_showing_recent)
-            if not found_games:
-                # Try opposite type (upcoming/recent)
-                self.soccer_showing_recent = not self.soccer_showing_recent
-                found_games = self._get_team_games(current_team, 'soccer', self.soccer_showing_recent)
-            
-            if not found_games:
-                # Move to next team if no games found for current one
-                self.soccer_current_team_index = (self.soccer_current_team_index + 1) % len(self.soccer_favorite_teams)
-                self.soccer_showing_recent = True # Reset to recent for the new team
-                # Maybe try finding game for the *new* team immediately? Optional.
-        elif sport == 'nfl':
-            if not self.nfl_favorite_teams: return
-            current_team = self.nfl_favorite_teams[self.nfl_current_team_index]
-            # Try to find games for current team (recent first)
-            found_games = self._get_team_games(current_team, 'nfl', self.nfl_showing_recent)
-            if not found_games:
-                # Try opposite type (upcoming/recent)
-                self.nfl_showing_recent = not self.nfl_showing_recent
-                found_games = self._get_team_games(current_team, 'nfl', self.nfl_showing_recent)
-            
-            if not found_games:
-                # Move to next team if no games found for current one
-                self.nfl_current_team_index = (self.nfl_current_team_index + 1) % len(self.nfl_favorite_teams)
-                self.nfl_showing_recent = True # Reset to recent for the new team
-        elif sport == 'ncaa_fb': # Add NCAA FB case
-            if not self.ncaa_fb_favorite_teams: return
-            current_team = self.ncaa_fb_favorite_teams[self.ncaa_fb_current_team_index]
-            # Try to find games for current team (recent first)
-            found_games = self._get_team_games(current_team, 'ncaa_fb', self.ncaa_fb_showing_recent)
-            if not found_games:
-                # Try opposite type (upcoming/recent)
-                self.ncaa_fb_showing_recent = not self.ncaa_fb_showing_recent
-                found_games = self._get_team_games(current_team, 'ncaa_fb', self.ncaa_fb_showing_recent)
-            
-            if not found_games:
-                # Move to next team if no games found for current one
-                self.ncaa_fb_current_team_index = (self.ncaa_fb_current_team_index + 1) % len(self.ncaa_fb_favorite_teams)
-                self.ncaa_fb_showing_recent = True # Reset to recent for the new team
 
     # --- SCHEDULING METHODS ---
     def _load_schedule_config(self):
@@ -1033,6 +1013,7 @@ class DisplayController:
         # Check if each sport is enabled before processing
         nhl_enabled = self.config.get('nhl_scoreboard', {}).get('enabled', False)
         nba_enabled = self.config.get('nba_scoreboard', {}).get('enabled', False)
+        wnba_enabled = self.config.get('wnba_scoreboard', {}).get('enabled', False)
         mlb_enabled = self.config.get('mlb_scoreboard', {}).get('enabled', False)
         milb_enabled = self.config.get('milb_scoreboard', {}).get('enabled', False)
         soccer_enabled = self.config.get('soccer_scoreboard', {}).get('enabled', False)
@@ -1045,6 +1026,7 @@ class DisplayController:
         
         update_mode('nhl_live', getattr(self, 'nhl_live', None), self.nhl_live_priority, nhl_enabled)
         update_mode('nba_live', getattr(self, 'nba_live', None), self.nba_live_priority, nba_enabled)
+        update_mode('wnba_live', getattr(self, 'wnba_live', None), self.wnba_live_priority, wnba_enabled)
         update_mode('mlb_live', getattr(self, 'mlb_live', None), self.mlb_live_priority, mlb_enabled)
         update_mode('milb_live', getattr(self, 'milb_live', None), self.milb_live_priority, milb_enabled)
         update_mode('soccer_live', getattr(self, 'soccer_live', None), self.soccer_live_priority, soccer_enabled)
@@ -1096,6 +1078,7 @@ class DisplayController:
                 for sport, attr, priority in [
                     ('nhl', 'nhl_live', self.nhl_live_priority),
                     ('nba', 'nba_live', self.nba_live_priority),
+                    ('wnba', 'wnba_live', self.wnba_live_priority),
                     ('mlb', 'mlb_live', self.mlb_live_priority),
                     ('milb', 'milb_live', self.milb_live_priority),
                     ('soccer', 'soccer_live', self.soccer_live_priority),
@@ -1264,6 +1247,10 @@ class DisplayController:
                                 manager_to_display = self.nba_recent
                             elif self.current_display_mode == 'nba_upcoming' and self.nba_upcoming:
                                 manager_to_display = self.nba_upcoming
+                            elif self.current_display_mode == 'wnba_recent' and self.wnba_recent:
+                                manager_to_display = self.wnba_recent
+                            elif self.current_display_mode == 'wnba_upcoming' and self.wnba_upcoming:
+                                manager_to_display = self.wnba_upcoming
                             elif self.current_display_mode == 'nfl_recent' and self.nfl_recent:
                                 manager_to_display = self.nfl_recent
                             elif self.current_display_mode == 'nfl_upcoming' and self.nfl_upcoming:
@@ -1302,6 +1289,8 @@ class DisplayController:
                                 manager_to_display = self.nhl_live
                             elif self.current_display_mode == 'nba_live' and self.nba_live:
                                 manager_to_display = self.nba_live
+                            elif self.current_display_mode == 'wnba_live' and self.wnba_live:
+                                manager_to_display = self.wnba_live
                             elif self.current_display_mode == 'nfl_live' and self.nfl_live:
                                 manager_to_display = self.nfl_live
                             elif self.current_display_mode == 'ncaa_fb_live' and self.ncaa_fb_live:
