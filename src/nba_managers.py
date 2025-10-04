@@ -1,18 +1,11 @@
-import os
 import time
 import logging
 import requests
-import json
-from typing import Dict, Any, Optional, List
-from PIL import Image, ImageDraw, ImageFont
+from typing import Dict, Any, Optional
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from src.display_manager import DisplayManager
 from src.cache_manager import CacheManager
-from src.config_manager import ConfigManager
-from src.odds_manager import OddsManager
-from src.background_data_service import get_background_service
-from src.background_cache_mixin import BackgroundCacheMixin
 from src.base_classes.basketball import Basketball, BasketballLive
 from src.base_classes.sports import SportsRecent, SportsUpcoming
 import pytz
