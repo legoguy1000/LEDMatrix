@@ -75,7 +75,6 @@ class Hockey(SportsCore):
 
             home_shots = 0
             away_shots = 0
-            status_short = ""
             if home_team_saves_per > 0:
                 away_shots = round(home_team_saves / home_team_saves_per)
             if away_team_saves_per > 0:
@@ -84,7 +83,6 @@ class Hockey(SportsCore):
             if situation and status["type"]["state"] == "in":
                 # Detect scoring events from status detail
                 # status_detail = status["type"].get("detail", "")
-                status_short = status["type"].get("shortDetail", "")
                 powerplay = situation.get("isPowerPlay", False)
                 penalties = situation.get("penalties", "")
 
@@ -115,8 +113,6 @@ class Hockey(SportsCore):
                     "penalties": penalties,
                     "home_shots": home_shots,
                     "away_shots": away_shots,
-                    "is_period_break": status["type"]["name"] == "STATUS_END_PERIOD",
-                    "status_short": status_short,
                 }
             )
 
@@ -229,7 +225,7 @@ class HockeyLive(Hockey, SportsLive):
                 f"{game.get('period_text', '')} {game.get('clock', '')}".strip()
             )
             if game.get("is_period_break"):
-                period_clock_text = game.get("status_short", "Period Break")
+                period_clock_text = game.get("status_text", "Period Break")
 
             status_width = draw_overlay.textlength(
                 period_clock_text, font=self.fonts["time"]
