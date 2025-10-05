@@ -419,6 +419,7 @@ class SportsCore(ABC):
             if not home_team or not away_team:
                 self.logger.warning(f"Could not find home or away team in event: {game_event.get('id')}")
                 return None, None, None, None, None
+
             try:
                 home_abbr = home_team["team"]["abbreviation"]
             except KeyError:
