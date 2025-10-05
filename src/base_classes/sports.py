@@ -470,6 +470,7 @@ class SportsCore(ABC):
                 "is_upcoming": (status["type"]["state"] == "pre" or 
                                status["type"]["name"].lower() in ['scheduled', 'pre-game', 'status_scheduled']),
                 "is_halftime": status["type"]["state"] == "halftime" or status["type"]["name"] == "STATUS_HALFTIME", # Added halftime check
+                "is_period_break": status["type"]["name"] == "STATUS_END_PERIOD", # Added Period Break check
                 "home_abbr": home_abbr,
                 "home_id": home_team["id"],
                 "home_score": home_team.get("score", "0"),
